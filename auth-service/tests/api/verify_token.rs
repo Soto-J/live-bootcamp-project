@@ -1,4 +1,5 @@
-use crate::tests::api::helpers::TestApp;
+use crate::helpers::TestApp;
+
 
 #[tokio::test]
 pub async fn root_returns_verify_token() {
