@@ -1,4 +1,5 @@
-use crate::Application;
+use auth_service::Application;
+use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,
@@ -34,12 +35,16 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn signup_root(&self) -> reqwest::Response {
+    pub async fn post_signup<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
         self.http_client
             .post(&format!("{}/signup", &self.address))
+            .json(body)
             .send()
             .await
-            .expect("Signup failed.")
+            .expect("Failed to execute request.")
     }
 
     pub async fn login_root(&self) -> reqwest::Response {
@@ -47,7 +52,7 @@ impl TestApp {
             .post(&format!("{}/login", &self.address))
             .send()
             .await
-            .expect("Login failed.")
+            .expect("Failed to execute request.")
     }
 
     pub async fn logout_root(&self) -> reqwest::Response {
@@ -55,7 +60,7 @@ impl TestApp {
             .post(&format!("{}/logout", &self.address))
             .send()
             .await
-            .expect("Logout failed.")
+            .expect("Failed to execute request.")
     }
 
     pub async fn verify_2fa_root(&self) -> reqwest::Response {
@@ -63,7 +68,7 @@ impl TestApp {
             .post(&format!("{}/verify-2fa", &self.address))
             .send()
             .await
-            .expect("2fa failed.")
+            .expect("Failed to execute request.")
     }
 
     pub async fn verify_token_root(&self) -> reqwest::Response {
@@ -71,6 +76,10 @@ impl TestApp {
             .post(&format!("{}/verify-token", &self.address))
             .send()
             .await
-            .expect("Verify token failed.")
+            .expect("Failed to execute request.")
     }
+}
+
+pub fn get_random_email() -> String {
+    format!("{}@example.com", Uuid::new_v4())
 }
