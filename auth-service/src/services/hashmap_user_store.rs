@@ -1,11 +1,8 @@
+use crate::domain::User;
 use std::{
     collections::{hash_map, HashMap},
     default,
 };
-
-use axum::http::header::Entry;
-
-use crate::domain::User;
 
 #[derive(Debug, PartialEq)]
 pub enum UserStoreError {
@@ -22,9 +19,7 @@ pub struct HashmapUserStore {
 
 impl HashmapUserStore {
     pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        let email = user.email().clone();
-
-        match self.users.entry(email) {
+        match self.users.entry(user.email()) {
             hash_map::Entry::Occupied(_) => Err(UserStoreError::UserAlreadyExists),
             hash_map::Entry::Vacant(entry) => {
                 entry.insert(user);
@@ -32,52 +27,89 @@ impl HashmapUserStore {
             }
         }
 
+        // let email = user.email();
         // if self.users.contains_key(&email) {
         //     return Err(UserStoreError::UserAlreadyExists);
         // }
 
-        // self.users
-        //     .insert(email, user)
-        //     .expect("Failed to insert user.");
+        // self.users.insert(email, user)
 
         // Ok(())
     }
 
-    pub fn get_user(&self, email: &str) -> Result<(), User> {
-        
+    pub fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
+        if let Some(user) = self.users.get(email) {
+            return Ok(user.clone());
+        }
+
+        Err(UserStoreError::UserNotFound)
     }
 
-    // TODO: Implement a public method called `get_user`, which takes an
-    // immutable reference to self and an email string slice as arguments.
-    // This function should return a `Result` type containing either a
-    // `User` object or a `UserStoreError`.
-    // Return `UserStoreError::UserNotFound` if the user can not be found.
+    pub fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+        if let Some(user) = self.users.get(email) {
+            if user.password() == password {
+                return Ok(());
+            } else {
+                return Err(UserStoreError::InvalidCredentials);
+            }
+        }
 
-    // TODO: Implement a public method called `validate_user`, which takes an
-    // immutable reference to self, an email string slice, and a password string slice
-    // as arguments. `validate_user` should return a `Result` type containing either a
-    // unit type `()` if the email/password passed in match an existing user, or a `UserStoreError`.
-    // Return `UserStoreError::UserNotFound` if the user can not be found.
-    // Return `UserStoreError::InvalidCredentials` if the password is incorrect.
+        Err(UserStoreError::UserNotFound)
+    }
 }
 
-// TODO: Add unit tests for your `HashmapUserStore` implementation
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::api::{get_random_email, get_random_password};
 
     #[tokio::test]
     async fn test_add_user() {
-        todo!()
+        let mut db = HashmapUserStore::default();
+
+        let email = get_random_email();
+        let password = get_random_password();
+        let user = User::new(email, password, false);
+
+        let result = db.add_user(user.clone());
+        assert_eq!(
+            result,
+            Ok(()),
+            "Expected adding a new user to succeed, but it failed."
+        );
+
+        let result = db.add_user(user);
+        assert_eq!(
+            result,
+            Err(UserStoreError::UserAlreadyExists),
+            "Expected adding the same user again to return UserAlreadyExists error."
+        )
     }
 
     #[tokio::test]
     async fn test_get_user() {
-        todo!()
+        let mut db = HashmapUserStore::default();
+        let email = get_random_email();
+
+        let before_insert = db.get_user(&email);
+        assert_eq!(
+            before_insert,
+            Err(UserStoreError::UserNotFound),
+            "Expected get user to return UserNotFound."
+        );
+
+        let password = get_random_password();
+        let user = User::new(email.clone(), password.clone(), false);
+
+        db.add_user(user.clone()).unwrap();
+
+        let after_insert = db.get_user(&email).unwrap();
+        assert_eq!(&after_insert.email(), &email);
+        assert_eq!(&after_insert.password(), &password);
     }
 
-    #[tokio::test]
-    async fn test_validate_user() {
-        todo!()
-    }
+    // #[tokio::test]
+    // async fn test_validate_user() {
+    //     todo!()
+    // }
 }

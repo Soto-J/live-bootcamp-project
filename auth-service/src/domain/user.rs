@@ -1,4 +1,4 @@
-#[derive()]
+#[derive(Clone, PartialEq, Debug)]
 pub struct User {
     email: String,
     password: String,
@@ -14,7 +14,10 @@ impl User {
         }
     }
 
-    pub fn email(&self) -> &String {
-        return &self.email;
+    pub fn email(&self) -> String {
+        return self.email.clone();
+    }
+    pub fn password(&self) -> String {
+        return self.password.clone();
     }
 }

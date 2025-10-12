@@ -2,6 +2,7 @@ use axum::{routing::post, serve::Serve, Router};
 use std::error::Error;
 use tower_http::services::ServeDir;
 
+mod api;
 mod domain;
 mod routes;
 mod services;
