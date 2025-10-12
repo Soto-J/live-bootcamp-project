@@ -2,7 +2,9 @@ use axum::{routing::post, serve::Serve, Router};
 use std::error::Error;
 use tower_http::services::ServeDir;
 
+mod domain;
 mod routes;
+mod services;
 
 pub struct Application {
     server: Serve<Router, Router>,
@@ -13,7 +15,7 @@ impl Application {
     pub async fn build(address: &str) -> Result<Self, Box<dyn Error>> {
         let router = Router::new()
             .nest_service("/", ServeDir::new("assets"))
-            .route("/signup", post(routes::signup_malformed_request_422))
+            .route("/signup", post(routes::signup_handler))
             .route("/login", post(routes::login_handler))
             .route("/logout", post(routes::logout_handler))
             .route("/verify-2fa", post(routes::verify_2fa_handler))

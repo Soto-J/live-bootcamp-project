@@ -1,7 +1,5 @@
 use crate::helpers::TestApp;
 
-
-
 #[tokio::test]
 pub async fn root_returns_login() {
     let app = TestApp::new().await;
