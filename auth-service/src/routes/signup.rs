@@ -11,7 +11,7 @@ pub struct SignupRequest {
     pub requires_2fa: bool,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct SignupResponse {
     pub message: String,
 }

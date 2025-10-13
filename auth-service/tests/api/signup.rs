@@ -1,4 +1,4 @@
-use crate::helpers::{get_random_email, TestApp};
+use crate::helpers::{get_random_email, get_random_password, TestApp};
 use auth_service::routes::SignupResponse;
 
 #[tokio::test]
@@ -76,12 +76,17 @@ pub async fn should_return_201_if_valid_input() {
         )
     }
 
-    let response = app.post_signup(&test_cases[0]);
+    let response = app
+        .post_signup(&serde_json::json!({
+            "email": get_random_email(),
+            "password": get_random_password(),
+            "requires2FA": true
+        })).await;
+
     let expected_response = SignupResponse {
         message: "User created successfully!".to_owned(),
     };
 
-    // Assert that we are getting the correct response body!
     assert_eq!(
         response
             .json::<SignupResponse>()

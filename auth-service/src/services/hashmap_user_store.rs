@@ -1,7 +1,7 @@
 use crate::domain::User;
+
 use std::collections::{hash_map::Entry, HashMap};
 
-#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum UserStoreError {
     UserAlreadyExists,
@@ -16,7 +16,6 @@ pub struct HashmapUserStore {
     users: HashMap<String, User>,
 }
 
-#[allow(dead_code)]
 impl HashmapUserStore {
     pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
         match self.users.entry(user.email().to_owned()) {
