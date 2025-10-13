@@ -6,18 +6,19 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(email: String, password: String, requires_2fa: bool) -> Self {
+    pub fn new<T: AsRef<str>>(email: T, password: T, requires_2fa: bool) -> Self {
         Self {
-            email,
-            password,
+            email: email.as_ref().to_owned(),
+            password: password.as_ref().to_owned(),
             requires_2fa,
         }
     }
 
-    pub fn email(&self) -> String {
-        return self.email.clone();
+    pub fn email(&self) -> &str {
+        &self.email
     }
-    pub fn password(&self) -> String {
-        return self.password.clone();
+
+    pub fn password(&self) -> &str {
+        &self.password
     }
 }

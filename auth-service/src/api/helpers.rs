@@ -1,4 +1,6 @@
-use crate::Application;
+use crate::{app_state::AppState, services::HashmapUserStore, Application};
+use std::sync::Arc;
+use tokio::sync::RwLock;
 use uuid::Uuid;
 
 pub struct TestApp {
@@ -8,7 +10,12 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        let app = Application::build("127.0.0.1:0")
+        let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
+        let app_state = AppState::new(user_store);
+
+        let address = "127.0.0.1:0";
+
+        let app = Application::build(app_state, address)
             .await
             .expect("Failed to build app");
 

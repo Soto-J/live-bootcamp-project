@@ -1,9 +1,7 @@
 use crate::domain::User;
-use std::{
-    collections::{hash_map, HashMap},
-    default,
-};
+use std::collections::{hash_map::Entry, HashMap};
 
+#[allow(dead_code)]
 #[derive(Debug, PartialEq)]
 pub enum UserStoreError {
     UserAlreadyExists,
@@ -12,29 +10,22 @@ pub enum UserStoreError {
     UnexpectedError,
 }
 
+#[allow(dead_code)]
 #[derive(Default)]
 pub struct HashmapUserStore {
     users: HashMap<String, User>,
 }
 
+#[allow(dead_code)]
 impl HashmapUserStore {
     pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        match self.users.entry(user.email()) {
-            hash_map::Entry::Occupied(_) => Err(UserStoreError::UserAlreadyExists),
-            hash_map::Entry::Vacant(entry) => {
+        match self.users.entry(user.email().to_owned()) {
+            Entry::Occupied(_) => Err(UserStoreError::UserAlreadyExists),
+            Entry::Vacant(entry) => {
                 entry.insert(user);
                 Ok(())
             }
         }
-
-        // let email = user.email();
-        // if self.users.contains_key(&email) {
-        //     return Err(UserStoreError::UserAlreadyExists);
-        // }
-
-        // self.users.insert(email, user)
-
-        // Ok(())
     }
 
     pub fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
@@ -45,9 +36,13 @@ impl HashmapUserStore {
         Err(UserStoreError::UserNotFound)
     }
 
-    pub fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
-        if let Some(user) = self.users.get(email) {
-            if user.password() == password {
+    pub fn validate_user<T: AsRef<str>>(
+        &self,
+        email: T,
+        password: T,
+    ) -> Result<(), UserStoreError> {
+        if let Some(user) = self.users.get(email.as_ref()) {
+            if user.password() == password.as_ref() {
                 return Ok(());
             } else {
                 return Err(UserStoreError::InvalidCredentials);
@@ -101,15 +96,47 @@ mod tests {
         let password = get_random_password();
         let user = User::new(email.clone(), password.clone(), false);
 
-        db.add_user(user.clone()).unwrap();
+        db.add_user(user.clone())
+            .expect("Failed to insert test user.");
 
         let after_insert = db.get_user(&email).unwrap();
         assert_eq!(&after_insert.email(), &email);
         assert_eq!(&after_insert.password(), &password);
     }
 
-    // #[tokio::test]
-    // async fn test_validate_user() {
-    //     todo!()
-    // }
+    #[tokio::test]
+    async fn test_validate_user() {
+        let mut db = HashmapUserStore::default();
+
+        let email = get_random_email();
+        let password = get_random_password();
+
+        let user = User::new(&email, &password, false);
+
+        db.add_user(user).expect("Failed to add test user.");
+
+        let correct_credentials = db.validate_user(&email, &password);
+        assert_eq!(correct_credentials, Ok(()), "Expect to return Ok(()).");
+
+        let incorrect_email = db.validate_user(get_random_email(), password);
+        assert_eq!(
+            incorrect_email,
+            Err(UserStoreError::UserNotFound),
+            "Expected to return UserNotFound with incorrect email."
+        );
+
+        let incorrect_credentials = db.validate_user(get_random_email(), get_random_password());
+        assert_eq!(
+            incorrect_credentials,
+            Err(UserStoreError::UserNotFound),
+            "Expected to return UserNotFound with incorrect email and password."
+        );
+
+        let incorrect_password = db.validate_user(&email, &get_random_password());
+        assert_eq!(
+            incorrect_password,
+            Err(UserStoreError::InvalidCredentials),
+            "Expected to return InvalidCredentials with incorrect password."
+        )
+    }
 }
