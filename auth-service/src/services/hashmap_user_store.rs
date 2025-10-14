@@ -17,7 +17,7 @@ pub struct HashmapUserStore {
 
 impl HashmapUserStore {
     pub fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        match self.users.entry(user.email().to_owned()) {
+        match self.users.entry(user.email().to_string()) {
             Entry::Occupied(_) => Err(UserStoreError::UserAlreadyExists),
             Entry::Vacant(entry) => {
                 entry.insert(user);
