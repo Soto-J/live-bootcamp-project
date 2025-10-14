@@ -10,7 +10,6 @@ pub enum UserStoreError {
     UnexpectedError,
 }
 
-#[allow(dead_code)]
 #[derive(Default)]
 pub struct HashmapUserStore {
     users: HashMap<String, User>,
@@ -27,12 +26,8 @@ impl HashmapUserStore {
         }
     }
 
-    pub fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
-        if let Some(user) = self.users.get(email) {
-            return Ok(user.clone());
-        }
-
-        Err(UserStoreError::UserNotFound)
+    pub fn get_user(&self, email: &str) -> Result<&User, UserStoreError> {
+        self.users.get(email).ok_or(UserStoreError::UserNotFound)
     }
 
     pub fn validate_user<T: AsRef<str>>(
@@ -40,15 +35,13 @@ impl HashmapUserStore {
         email: T,
         password: T,
     ) -> Result<(), UserStoreError> {
-        if let Some(user) = self.users.get(email.as_ref()) {
-            if user.password() == password.as_ref() {
-                return Ok(());
-            } else {
-                return Err(UserStoreError::InvalidCredentials);
-            }
+        let user = self.get_user(email.as_ref())?;
+
+        if user.password() != password.as_ref() {
+            return Err(UserStoreError::InvalidCredentials);
         }
 
-        Err(UserStoreError::UserNotFound)
+        Ok(())
     }
 }
 
