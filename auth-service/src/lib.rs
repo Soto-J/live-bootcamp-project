@@ -1,17 +1,17 @@
-use {
-    app_state::AppState,
-    axum::{
-        http::StatusCode,
-        response::{IntoResponse, Response},
-        routing::post,
-        serve::Serve,
-        Json, Router,
-    },
-    domain::AuthAPIError,
-    serde::{Deserialize, Serialize},
-    std::error::Error,
-    tower_http::services::ServeDir,
+use app_state::AppState;
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+    routing::post,
+    serve::Serve,
+    Json, Router,
 };
+use domain::AuthAPIError;
+use serde::{Deserialize, Serialize};
+use std::error::Error;
+use tower_http::services::ServeDir;
+
+use crate::domain::UserStore;
 
 mod api;
 pub mod app_state;

@@ -1,19 +1,6 @@
-use {
-    crate::helpers::{get_random_email, get_random_password, TestApp},
-    auth_service::{
-        app_state::AppState,
-        routes::{signup, SignupRequest, SignupResponse},
-        services::{HashmapUserStore, UserStoreError},
-        ErrorResponse,
-    },
-    axum::{
-        extract::State,
-        http::StatusCode,
-        response::{IntoResponse, Response},
-    },
-    std::sync::Arc,
-    tokio::sync::RwLock,
-};
+use auth_service::routes::{SignupRequest, SignupResponse};
+
+use crate::helpers::{get_random_email, get_random_password, TestApp};
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
