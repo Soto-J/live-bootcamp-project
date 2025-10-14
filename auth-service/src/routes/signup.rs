@@ -1,10 +1,9 @@
-use {
-    crate::{
-        app_state::AppState,
-        domain::{AuthAPIError, User},
-    },
-    axum::{extract::State, http::StatusCode, response::IntoResponse, Json},
-    serde::{Deserialize, Serialize},
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    app_state::AppState,
+    domain::{AuthAPIError, User},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -32,9 +31,10 @@ pub async fn signup(
     }
 
     let user = User::new(request.email, request.password, request.requires_2fa);
+
     let mut user_store = state.user_store.write().await;
 
-    if let Err(_) = user_store.add_user(user) {
+    if let Err(_) = user_store.add_user(user).await {
         return Err(AuthAPIError::UserAlreadyExists);
     };
 
