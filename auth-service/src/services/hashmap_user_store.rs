@@ -1,16 +1,16 @@
-use crate::domain::{User, UserStore, UserStoreError};
+use crate::domain::{Email, Password, User, UserStore, UserStoreError};
 
 use std::collections::{hash_map::Entry, HashMap};
 
 #[derive(Default, Clone)]
 pub struct HashmapUserStore {
-    users: HashMap<String, User>,
+    users: HashMap<Email, User>,
 }
 
 #[async_trait::async_trait]
 impl UserStore for HashmapUserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        match self.users.entry(user.email().to_string()) {
+        match self.users.entry(user.email().clone()) {
             Entry::Occupied(_) => Err(UserStoreError::UserAlreadyExists),
             Entry::Vacant(entry) => {
                 entry.insert(user);
@@ -21,7 +21,7 @@ impl UserStore for HashmapUserStore {
 
     async fn get_user(&self, email: &str) -> Result<User, UserStoreError> {
         self.users
-            .get(email)
+            .get(&Email(email.to_string()))
             .cloned()
             .ok_or(UserStoreError::UserNotFound)
     }
@@ -29,7 +29,7 @@ impl UserStore for HashmapUserStore {
     async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
         let user = self.get_user(&email).await?;
 
-        if user.password() != password {
+        if *user.password() != Password(password.to_string()) {
             return Err(UserStoreError::InvalidCredentials);
         }
 
@@ -41,6 +41,8 @@ impl UserStore for HashmapUserStore {
 mod tests {
     use super::*;
     use crate::api::{get_random_email, get_random_password};
+
+    use fake::{faker::internet::en::SafeEmail, Fake};
 
     #[tokio::test]
     async fn test_add_user() {
@@ -70,7 +72,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_user() {
         let mut db = HashmapUserStore::default();
-        let email = get_random_email();
+        let email: String = SafeEmail().fake();
 
         let before_insert = db.get_user(&email).await;
 
@@ -92,8 +94,8 @@ mod tests {
             .await
             .expect("Failed to insert test user 2.");
 
-        assert_eq!(&after_insert.email(), &email);
-        assert_eq!(&after_insert.password(), &password);
+        assert_eq!(after_insert.email().as_ref(), email);
+        assert_eq!(after_insert.password().as_ref(), password);
     }
 
     #[tokio::test]
@@ -101,9 +103,11 @@ mod tests {
         let mut db = HashmapUserStore::default();
 
         let email = get_random_email();
+        let response = Email::parse(email.clone()).unwrap();
         let password = get_random_password();
+        let response = Password::parse(password.clone()).unwrap();
 
-        let user = User::new(&email, &password, false);
+        let user = User::new(email.clone(), password.clone(), false);
 
         db.add_user(user).await.expect("Failed to add test user.");
 
