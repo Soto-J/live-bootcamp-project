@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     app_state::AppState,
-    domain::{AuthAPIError, User},
+    domain::{AuthAPIError, Email, Password, User},
 };
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -23,12 +23,8 @@ pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let is_invalid =
-        request.email.is_empty() || !request.email.contains('@') || request.password.len() < 8;
-
-    if is_invalid {
-        return Err(AuthAPIError::InvalidCredentials);
-    }
+    Email::parse(request.email.clone())?;
+    Password::parse(request.password.clone())?;
 
     let user = User::new(request.email, request.password, request.requires_2fa);
 

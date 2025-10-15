@@ -1,24 +1,26 @@
+use crate::domain::{Email, Password};
+
 #[derive(Clone, PartialEq, Debug)]
 pub struct User {
-    email: String,
-    password: String,
+    email: Email,
+    password: Password,
     requires_2fa: bool,
 }
 
 impl User {
-    pub fn new<T: AsRef<str>>(email: T, password: T, requires_2fa: bool) -> Self {
+    pub fn new(email: String, password: String, requires_2fa: bool) -> Self {
         Self {
-            email: email.as_ref().to_owned(),
-            password: password.as_ref().to_owned(),
+            email: Email(email),
+            password: Password(password),
             requires_2fa,
         }
     }
 
-    pub fn email(&self) -> &str {
+    pub fn email(&self) -> &Email {
         &self.email
     }
 
-    pub fn password(&self) -> &str {
+    pub fn password(&self) -> &Password {
         &self.password
     }
 }
