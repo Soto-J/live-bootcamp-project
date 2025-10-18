@@ -1,8 +1,9 @@
-use crate::domain::AuthAPIError;
+use crate::{
+    api::{get_invalid_password, get_random_password},
+    domain::AuthAPIError,
+};
 
-use fake::{faker::internet::en, Fake};
 use serde::Deserialize;
-use std::ops::Range;
 
 #[derive(Debug, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Password(pub String);
@@ -24,7 +25,7 @@ impl AsRef<str> for Password {
 
 #[tokio::test]
 async fn should_return_valid_password() {
-    let password: String = en::Password(Range { start: 8, end: 15 }).fake();
+    let password = get_random_password();
     let response = Password::parse(password);
 
     assert_eq!(response, Ok(()), "Expect return value to be Ok(())")
@@ -32,7 +33,7 @@ async fn should_return_valid_password() {
 
 #[tokio::test]
 async fn should_return_invalid_password() {
-    let password: String = en::Password(Range { start: 0, end: 7 }).fake();
+    let password = get_invalid_password();
 
     print!("PASSWORD: {}", password);
     let response = Password::parse(password);

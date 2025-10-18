@@ -26,6 +26,8 @@ impl UserStore for HashmapUserStore {
             .ok_or(UserStoreError::UserNotFound)
     }
 
+    async fn login_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {}
+
     async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
         let user = self.get_user(&email).await?;
 
@@ -50,7 +52,7 @@ mod tests {
 
         let email = get_random_email();
         let password = get_random_password();
-        let user = User::new(email, password, false);
+        let user = User::new(email, password);
 
         let result = db.add_user(user.clone()).await;
 
@@ -72,7 +74,7 @@ mod tests {
     #[tokio::test]
     async fn test_get_user() {
         let mut db = HashmapUserStore::default();
-        let email: String = SafeEmail().fake();
+        let email = get_random_email();
 
         let before_insert = db.get_user(&email).await;
 
@@ -83,7 +85,7 @@ mod tests {
         );
 
         let password = get_random_password();
-        let user = User::new(email.clone(), password.clone(), false);
+        let user = User::new(email.clone(), password.clone());
 
         db.add_user(user.clone())
             .await
@@ -107,7 +109,7 @@ mod tests {
         let password = get_random_password();
         let response = Password::parse(password.clone()).unwrap();
 
-        let user = User::new(email.clone(), password.clone(), false);
+        let user = User::new(email.clone(), password.clone());
 
         db.add_user(user).await.expect("Failed to add test user.");
 

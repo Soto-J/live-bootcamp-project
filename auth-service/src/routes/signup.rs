@@ -1,17 +1,17 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 use crate::{
     app_state::AppState,
     domain::{AuthAPIError, Email, Password, User},
 };
 
-#[derive(Serialize, Deserialize, Debug, Clone)]
+#[derive(Serialize, Deserialize, Debug, Clone, Validate)]
 pub struct SignupRequest {
+    #[validate(email)]
     pub email: String,
     pub password: String,
-    #[serde(rename = "requires2FA")]
-    pub requires_2fa: bool,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -26,7 +26,7 @@ pub async fn signup(
     Email::parse(request.email.clone())?;
     Password::parse(request.password.clone())?;
 
-    let user = User::new(request.email, request.password, request.requires_2fa);
+    let user = User::new(request.email, request.password);
 
     let mut user_store = state.user_store.write().await;
 
@@ -37,7 +37,7 @@ pub async fn signup(
     Ok((
         StatusCode::CREATED,
         Json(SignupResponse {
-            message: "User created successfully!".to_string(),
+            message: "User created successfully!".into(),
         }),
     ))
 }
