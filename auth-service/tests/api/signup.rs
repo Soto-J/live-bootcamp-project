@@ -86,7 +86,7 @@ pub async fn should_return_201_if_valid_input() {
         .await;
 
     let expected_response = SignupResponse {
-        message: "User created successfully!".to_owned(),
+        message: "User created successfully!".into(),
     };
 
     assert_eq!(
@@ -104,19 +104,16 @@ pub async fn should_return_400_if_invalid_input() {
 
     let test_cases = [
         serde_json::json!(SignupRequest {
-            email: "randomemail.com".to_string(),
+            email: "randomemail.com".into(),
             password: get_random_password(),
-            requires_2fa: true,
         }),
         serde_json::json!(SignupRequest {
             email: get_random_email(),
-            password: "1234567".to_string(),
-            requires_2fa: true,
+            password: "1234567".into(),
         }),
         serde_json::json!(SignupRequest {
             email: get_random_email(),
-            password: "".to_string(),
-            requires_2fa: true,
+            password: "".into(),
         }),
     ];
 
@@ -139,7 +136,6 @@ pub async fn should_return_409_if_email_already_exists() {
     let user = serde_json::json!(SignupRequest {
         email: get_random_email(),
         password: get_random_password(),
-        requires_2fa: true,
     });
 
     app.post_signup(&user).await;

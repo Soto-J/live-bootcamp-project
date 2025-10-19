@@ -1,7 +1,10 @@
 use crate::{app_state::AppState, services::HashmapUserStore, Application};
-use std::sync::Arc;
+use fake::{
+    faker::internet::en::{self, SafeEmail},
+    Fake,
+};
+use std::{ops::Range, sync::Arc};
 use tokio::sync::RwLock;
-use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,
@@ -89,9 +92,13 @@ impl TestApp {
 }
 
 pub fn get_random_email() -> String {
-    format!("{}@example.com", Uuid::new_v4())
+    SafeEmail().fake()
 }
 
 pub fn get_random_password() -> String {
-    format!("{}", Uuid::new_v4())
+    en::Password(Range { start: 8, end: 15 }).fake()
+}
+
+pub fn get_invalid_password() -> String {
+    en::Password(Range { start: 0, end: 7 }).fake()
 }

@@ -8,11 +8,11 @@ pub struct User {
 }
 
 impl User {
-    pub fn new(email: String, password: String, requires_2fa: bool) -> Self {
+    pub fn new(email: String, password: String) -> Self {
         Self {
             email: Email(email),
             password: Password(password),
-            requires_2fa,
+            requires_2fa: false,
         }
     }
 

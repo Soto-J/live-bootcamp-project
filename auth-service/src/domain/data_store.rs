@@ -6,6 +6,8 @@ pub trait UserStore: Send + Sync {
 
     async fn get_user(&self, email: &str) -> Result<User, UserStoreError>;
 
+    async fn login_user(&self, email: &str, password: &str) -> Result<(), UserStoreError>;
+    
     async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError>;
 }
 
