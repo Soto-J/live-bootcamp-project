@@ -26,12 +26,20 @@ impl UserStore for HashmapUserStore {
             .ok_or(UserStoreError::UserNotFound)
     }
 
-    async fn login_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {}
+    async fn login_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
+        let user = self.get_user(email).await?;
+
+        if user.password().as_ref() != password {
+            return Err(UserStoreError::UnprocessableContent);
+        }
+
+        Ok(())
+    }
 
     async fn validate_user(&self, email: &str, password: &str) -> Result<(), UserStoreError> {
         let user = self.get_user(&email).await?;
 
-        if *user.password() != Password(password.to_string()) {
+        if user.password().as_ref() != password {
             return Err(UserStoreError::InvalidCredentials);
         }
 
@@ -43,8 +51,6 @@ impl UserStore for HashmapUserStore {
 mod tests {
     use super::*;
     use crate::api::{get_random_email, get_random_password};
-
-    use fake::{faker::internet::en::SafeEmail, Fake};
 
     #[tokio::test]
     async fn test_add_user() {

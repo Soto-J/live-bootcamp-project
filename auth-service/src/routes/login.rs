@@ -28,17 +28,14 @@ pub async fn login_handler(
 
     let user_store = state.user_store.read().await;
 
-    let response = user_store
+    let _ = user_store
         .login_user(&request.email, &request.password)
         .await;
 
-    match response {
-        Ok(_) => Ok((
-            StatusCode::ACCEPTED,
-            Json(LoginResponse {
-                message: "User logged in successfully".into(),
-            }),
-        )),
-        Err(_) => Err(AuthAPIError::InvalidCredentials),
-    }
+    Ok((
+        StatusCode::ACCEPTED,
+        Json(LoginResponse {
+            message: "User logged in successfully".into(),
+        }),
+    ))
 }

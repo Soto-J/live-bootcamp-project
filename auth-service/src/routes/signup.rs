@@ -41,7 +41,3 @@ pub async fn signup(
         }),
     ))
 }
-
-pub async fn signup_malformed_request_422() -> impl IntoResponse {
-    StatusCode::UNPROCESSABLE_ENTITY.into_response()
-}
