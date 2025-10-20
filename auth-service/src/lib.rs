@@ -11,11 +11,13 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tower_http::services::ServeDir;
 
-mod api;
+pub mod api;
 pub mod app_state;
+pub mod auth;
 pub mod domain;
 pub mod routes;
 pub mod services;
+pub mod utils;
 
 pub struct Application {
     server: Serve<Router, Router>,

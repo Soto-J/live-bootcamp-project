@@ -1,11 +1,13 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
-use serde::{self, Deserialize, Serialize};
-use validator::Validate;
-
 use crate::{
     app_state::AppState,
     domain::{AuthAPIError, Email, Password},
+    utils::generate_auth_cookie,
 };
+
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum_extra::extract::CookieJar;
+use serde::{self, Deserialize, Serialize};
+use validator::Validate;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Validate)]
 pub struct LoginRequest {
@@ -20,9 +22,14 @@ pub struct LoginResponse {
 
 pub async fn login_handler(
     State(state): State<AppState>,
+    cookie_jar: CookieJar,
     Json(request): Json<LoginRequest>,
-) -> Result<impl IntoResponse, AuthAPIError> {
-    let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
+    let email = match Email::parse(request.email) {
+        Ok(email) => email,
+        Err(_) => return (cookie_jar, Err(AuthAPIError::InvalidCredentials)),
+    };
+
     let password =
         Password::parse(request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
@@ -31,12 +38,16 @@ pub async fn login_handler(
     user_store
         .validate_user(&email, &password)
         .await
-        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
+        .map_err(|_| AuthAPIError::IncorrectCredentials);
 
     let user = user_store
         .get_user(&email)
         .await
-        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
+        .map_err(|_| AuthAPIError::IncorrectCredentials);
 
-    Ok(StatusCode::OK.into_response())
+    let auth_cookie = generate_auth_cookie(&email).map_err(|_| AuthAPIError::UnexpectedError)?;
+
+    let updated_jar = cookie_jar.add(auth_cookie);
+
+    (updated_jar, Ok(StatusCode::OK.into_response()))
 }

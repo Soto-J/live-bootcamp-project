@@ -1,4 +1,5 @@
 use crate::{app_state::AppState, services::HashmapUserStore, Application};
+
 use fake::{
     faker::internet::en::{self, SafeEmail},
     Fake,

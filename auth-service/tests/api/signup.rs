@@ -1,9 +1,9 @@
+use crate::helpers::{get_invalid_password, get_random_email, get_random_password, TestApp};
+
 use auth_service::{
     routes::{SignupRequest, SignupResponse},
     ErrorResponse,
 };
-
-use crate::helpers::{get_invalid_password, get_random_email, get_random_password, TestApp};
 
 #[tokio::test]
 pub async fn should_return_201_if_valid_input() {
