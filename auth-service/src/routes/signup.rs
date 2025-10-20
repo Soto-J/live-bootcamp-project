@@ -9,9 +9,10 @@ use crate::{
 
 #[derive(Serialize, Deserialize, Debug, Clone, Validate)]
 pub struct SignupRequest {
-    #[validate(email)]
     pub email: String,
     pub password: String,
+    #[serde(rename = "requires2FA")]
+    pub requires_2fa: bool,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -23,15 +24,21 @@ pub async fn signup(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    Email::parse(request.email.clone())?;
-    Password::parse(request.password.clone())?;
+    let email =
+        Email::parse(request.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let password =
+        Password::parse(request.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
-    let user = User::new(request.email, request.password);
+    let user = User::new(email, password, request.requires_2fa);
 
     let mut user_store = state.user_store.write().await;
 
-    if let Err(_) = user_store.add_user(user).await {
+    if user_store.get_user(user.email()).await.is_ok() {
         return Err(AuthAPIError::UserAlreadyExists);
+    }
+
+    if user_store.add_user(user).await.is_err() {
+        return Err(AuthAPIError::UnexpectedError);
     };
 
     Ok((
@@ -40,8 +47,4 @@ pub async fn signup(
             message: "User created successfully!".into(),
         }),
     ))
-}
-
-pub async fn signup_malformed_request_422() -> impl IntoResponse {
-    StatusCode::UNPROCESSABLE_ENTITY.into_response()
 }
