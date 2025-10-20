@@ -11,11 +11,9 @@ use serde::{Deserialize, Serialize};
 use std::error::Error;
 use tower_http::services::ServeDir;
 
-use crate::domain::UserStore;
-
 mod api;
 pub mod app_state;
-mod domain;
+pub mod domain;
 pub mod routes;
 pub mod services;
 
@@ -49,7 +47,7 @@ impl Application {
     }
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct ErrorResponse {
     pub error: String,
 }
@@ -59,13 +57,12 @@ impl IntoResponse for AuthAPIError {
         let (status, error_message) = match self {
             AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
             AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
-            AuthAPIError::Unauthorized => (StatusCode::UNAUTHORIZED, "Unathorized"),
-            AuthAPIError::BadRequest => (StatusCode::BAD_REQUEST, "Password invalid"),
+            AuthAPIError::IncorrectCredentials => (StatusCode::UNAUTHORIZED, "Unathorized"),
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }
             AuthAPIError::UnprocessableContent => {
-                (StatusCode::UNPROCESSABLE_ENTITY, "Invalid password")
+                (StatusCode::UNPROCESSABLE_ENTITY, "Malformed credentials")
             }
         };
 

@@ -9,7 +9,6 @@ use crate::{
 
 #[derive(Serialize, Deserialize, Debug, Clone, Validate)]
 pub struct LoginRequest {
-    #[validate(email)]
     pub email: String,
     pub password: String,
 }
@@ -23,19 +22,21 @@ pub async fn login_handler(
     State(state): State<AppState>,
     Json(request): Json<LoginRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    Email::parse(request.email.clone())?;
-    Password::parse(request.password.clone())?;
+    let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let password =
+        Password::parse(request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     let user_store = state.user_store.read().await;
 
-    let _ = user_store
-        .login_user(&request.email, &request.password)
-        .await;
+    user_store
+        .validate_user(&email, &password)
+        .await
+        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
 
-    Ok((
-        StatusCode::ACCEPTED,
-        Json(LoginResponse {
-            message: "User logged in successfully".into(),
-        }),
-    ))
+    let user = user_store
+        .get_user(&email)
+        .await
+        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
+
+    Ok(StatusCode::OK.into_response())
 }

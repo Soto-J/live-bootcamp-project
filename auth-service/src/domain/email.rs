@@ -1,31 +1,15 @@
-use crate::domain::AuthAPIError;
-
-use fake::{faker::internet::en::SafeEmail, Fake};
 use validator::ValidateEmail;
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct Email(pub String);
 
 impl Email {
-    pub fn parse(email: String) -> Result<(), AuthAPIError> {
-        let email = email.trim();
-        let is_not_valid = email.is_empty()
-            || !email.contains('.')
-            || !email.contains('@')
-            || !ValidateEmail::validate_email(&email);
-
-        if is_not_valid {
-            return Err(AuthAPIError::InvalidCredentials);
+    pub fn parse(email: String) -> Result<Email, String> {
+        if !(&email).validate_email() {
+            return Err(format!("{} is not a valid email.", email));
         }
 
-        if let Some(at_index) = email.find('@') {
-            let domain = &email[at_index + 1..];
-            if !domain.contains('.') {
-                return Err(AuthAPIError::InvalidCredentials);
-            }
-        }
-
-        Ok(())
+        Ok(Self(email))
     }
 }
 
@@ -35,44 +19,39 @@ impl AsRef<str> for Email {
     }
 }
 
-#[tokio::test]
-async fn should_return_valid_email() {
-    let test_cases: Vec<String> = vec![
-        SafeEmail().fake(),
-        SafeEmail().fake(),
-        SafeEmail().fake(),
-        SafeEmail().fake(),
-        SafeEmail().fake(),
-        SafeEmail().fake(),
-        SafeEmail().fake(),
-        SafeEmail().fake(),
-        SafeEmail().fake(),
-        SafeEmail().fake(),
-    ];
+#[cfg(test)]
+mod test {
+    use super::Email;
 
-    for test_case in test_cases {
-        print!("testing - Email: {:?}", test_case);
-        let response = Email::parse(test_case);
-        assert_eq!(response, Ok(()), "Expect return value to be Ok(())")
+    use crate::api::get_random_email;
+
+    use fake::{faker::internet::en::SafeEmail, Fake};
+
+    #[test]
+    fn empty_string_is_rejected() {
+        let email = "".to_string();
+        assert!(Email::parse(email).is_err());
     }
-}
 
-#[tokio::test]
-async fn should_return_invalid_email() {
-    let test_cases: Vec<String> = vec![
-        String::from(""),
-        String::from("test.com"),
-        String::from("test@com."),
-        String::from("te.st@com"),
-    ];
-
-    for test_case in test_cases {
-        println!("testing - Email: {:?}", test_case);
-        let response = Email::parse(test_case);
-        assert_eq!(
-            response,
-            Err(AuthAPIError::InvalidCredentials),
-            "Expect return value to be AuthAPIError InvalidCredentials"
-        )
+    #[test]
+    fn email_missing_at_symbol_is_rejected() {
+        let email = "ursuladomain.com".to_string();
+        assert!(Email::parse(email).is_err());
     }
+
+    #[test]
+    fn email_missing_subject_is_rejected() {
+        let email = "@domain.com".to_string();
+        assert!(Email::parse(email).is_err());
+    }
+
+    // #[derive(Debug, Clone)]
+    // struct ValidEmailFixture(pub String);
+
+    // impl quickcheck::Arbitrary for ValidEmailFixture {
+    //     fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
+    //         let email = SafeEmail().fake_with_rng(g);
+    //         Self(email)
+    //     }
+    // }
 }

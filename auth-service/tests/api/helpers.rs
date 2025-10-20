@@ -5,7 +5,6 @@ use fake::{
 };
 use std::{ops::Range, sync::Arc};
 use tokio::sync::RwLock;
-use uuid::Uuid;
 
 pub struct TestApp {
     pub address: String,
