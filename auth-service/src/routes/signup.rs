@@ -1,11 +1,11 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
-use serde::{Deserialize, Serialize};
-use validator::Validate;
-
 use crate::{
     app_state::AppState,
     domain::{AuthAPIError, Email, Password, User},
 };
+
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use serde::{Deserialize, Serialize};
+use validator::Validate;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Validate)]
 pub struct SignupRequest {

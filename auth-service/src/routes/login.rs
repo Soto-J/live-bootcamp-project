@@ -1,11 +1,13 @@
-use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
-use serde::{self, Deserialize, Serialize};
-use validator::Validate;
-
 use crate::{
     app_state::AppState,
     domain::{AuthAPIError, Email, Password},
+    utils::generate_auth_cookie,
 };
+
+use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use axum_extra::extract::CookieJar;
+use serde::{self, Deserialize, Serialize};
+use validator::Validate;
 
 #[derive(Serialize, Deserialize, Debug, Clone, Validate)]
 pub struct LoginRequest {
@@ -20,23 +22,42 @@ pub struct LoginResponse {
 
 pub async fn login_handler(
     State(state): State<AppState>,
+    cookie_jar: CookieJar,
     Json(request): Json<LoginRequest>,
-) -> Result<impl IntoResponse, AuthAPIError> {
-    let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
-    let password =
-        Password::parse(request.password).map_err(|_| AuthAPIError::InvalidCredentials)?;
+) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
+    let (valid_email, valid_password) = match parse_credentials(request.email, request.password) {
+        Ok(valid_credentials) => valid_credentials,
+        _ => return (cookie_jar, Err(AuthAPIError::InvalidCredentials)),
+    };
 
     let user_store = state.user_store.read().await;
 
-    user_store
-        .validate_user(&email, &password)
+    match user_store
+        .validate_user(&valid_email, &valid_password)
         .await
-        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
+    {
+        Ok(_) => {}
+        Err(_) => return (cookie_jar, Err(AuthAPIError::IncorrectCredentials)),
+    };
 
-    let user = user_store
-        .get_user(&email)
-        .await
-        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
+    let _ = match user_store.get_user(&valid_email).await {
+        Ok(user) => user,
+        Err(_) => return (cookie_jar, Err(AuthAPIError::IncorrectCredentials)),
+    };
 
-    Ok(StatusCode::OK.into_response())
+    let auth_cookie = match generate_auth_cookie(&valid_email) {
+        Ok(cookie) => cookie,
+        Err(_) => return (cookie_jar, Err(AuthAPIError::UnexpectedError)),
+    };
+
+    let updated_jar = cookie_jar.add(auth_cookie);
+
+    (updated_jar, Ok(StatusCode::OK.into_response()))
+}
+
+fn parse_credentials(email: String, password: String) -> Result<(Email, Password), AuthAPIError> {
+    let email = Email::parse(email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let password = Password::parse(password).map_err(|_| AuthAPIError::InvalidCredentials)?;
+
+    Ok((email, password))
 }

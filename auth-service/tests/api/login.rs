@@ -1,9 +1,43 @@
+use crate::helpers::{get_random_email, get_random_password, TestApp};
+
 use auth_service::{
     routes::{LoginRequest, SignupRequest},
+    utils::JWT_COOKIE_NAME,
     ErrorResponse,
 };
 
-use crate::helpers::{get_random_email, get_random_password, TestApp};
+#[tokio::test]
+async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
+    let app = TestApp::new().await;
+
+    let random_email = get_random_email();
+
+    let signup_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+        "requires2FA": false
+    });
+
+    let response = app.post_signup(&signup_body).await;
+
+    assert_eq!(response.status().as_u16(), 201);
+
+    let login_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+    });
+
+    let response = app.post_login(&login_body).await;
+
+    assert_eq!(response.status().as_u16(), 200);
+
+    let auth_cookie = response
+        .cookies()
+        .find(|cookie| cookie.name() == JWT_COOKIE_NAME)
+        .expect("No auth cookie found");
+
+    assert!(!auth_cookie.value().is_empty());
+}
 
 #[tokio::test]
 pub async fn should_return_400_if_invalid_credentials() {
@@ -12,9 +46,10 @@ pub async fn should_return_400_if_invalid_credentials() {
     let email = get_random_email();
     let password = get_random_password();
 
-    let signup_credentials = serde_json::json!(LoginRequest {
+    let signup_credentials = serde_json::json!(SignupRequest {
         email: email.clone(),
-        password
+        password,
+        requires_2fa: false
     });
 
     app.post_signup(&signup_credentials).await;
@@ -24,7 +59,7 @@ pub async fn should_return_400_if_invalid_credentials() {
         password: "".into()
     });
 
-    let response = app.login_root(&login_credentials).await;
+    let response = app.post_login(&login_credentials).await;
 
     assert_eq!(response.status().as_u16(), 400);
 
@@ -45,15 +80,19 @@ pub async fn should_return_401_if_incorrect_credentials() {
     let email = get_random_email();
     let password = get_random_password();
 
-    app.post_signup(&serde_json::json!(LoginRequest { email, password }))
-        .await;
+    app.post_signup(&serde_json::json!(SignupRequest {
+        email,
+        password,
+        requires_2fa: false
+    }))
+    .await;
 
     let email = get_random_email();
     let password = get_random_password();
 
     let credentials = serde_json::json!(LoginRequest { email, password });
 
-    let response = app.login_root(&credentials).await;
+    let response = app.post_login(&credentials).await;
 
     assert_eq!(response.status().as_u16(), 401);
     assert_eq!(
