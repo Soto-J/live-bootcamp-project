@@ -7,9 +7,10 @@ use axum::{
     Json, Router,
 };
 use domain::AuthAPIError;
+use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
-use tower_http::services::ServeDir;
+use tower_http::{cors::CorsLayer, services::ServeDir};
 
 pub mod api;
 pub mod app_state;
@@ -26,6 +27,16 @@ pub struct Application {
 
 impl Application {
     pub async fn build(app_state: AppState, address: &str) -> Result<Self, Box<dyn Error>> {
+        let allowed_origins = [
+            "http://localhost:8000".parse()?,
+            "http://[droplet_IP]:8000".parse()?,
+        ];
+
+        let cors = CorsLayer::new()
+            .allow_methods([Method::GET, Method::POST])
+            .allow_credentials(true)
+            .allow_origin(allowed_origins);
+
         let router = Router::new()
             .nest_service("/", ServeDir::new("assets"))
             .route("/signup", post(routes::signup))
@@ -33,7 +44,8 @@ impl Application {
             .route("/logout", post(routes::logout_handler))
             .route("/verify-2fa", post(routes::verify_2fa_handler))
             .route("/verify-token", post(routes::verify_token_handler))
-            .with_state(app_state);
+            .with_state(app_state)
+            .layer(cors);
 
         let listener = tokio::net::TcpListener::bind(address).await?;
 
@@ -63,9 +75,11 @@ impl IntoResponse for AuthAPIError {
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }
-            AuthAPIError::UnprocessableContent => {
-                (StatusCode::UNPROCESSABLE_ENTITY, "Malformed credentials")
-            }
+            AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing Token"),
+            AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid Token"),
+            // AuthAPIError::UnprocessableContent => {
+            //     (StatusCode::UNPROCESSABLE_ENTITY, "Malformed credentials")
+            // }
         };
 
         let body = Json(ErrorResponse {
