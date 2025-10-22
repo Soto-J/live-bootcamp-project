@@ -105,27 +105,24 @@ pub async fn should_return_401_if_incorrect_credentials() {
     )
 }
 
-// #[tokio::test]
-// pub async fn should_return_422_if_malformed_credentials() {
-//     let app = TestApp::new().await;
+#[tokio::test]
+pub async fn should_return_422_if_malformed_credentials() {
+    let app = TestApp::new().await;
 
-//     let email = get_random_email();
-//     let password = get_random_password();
+    let email = get_random_email();
+    let password = get_random_password();
 
-//     let credentials = serde_json::json!(SignupRequest {
-//         email,
-//         password,
-//         requires_2fa: true
-//     });
+    let credentials = serde_json::json!(SignupRequest {
+        email,
+        password,
+        requires_2fa: true
+    });
 
-//     app.post_signup(&credentials).await;
+    app.post_signup(&credentials).await;
 
-//     let invalid_credentials = serde_json::json!(LoginRequest {
-//         email: "hello world".into(),
-//         password: "".into(),
-//     });
+    let malformed_credentials = serde_json::json!({});
 
-//     let response = app.login_root(&invalid_credentials).await;
+    let response = app.post_login(&malformed_credentials).await;
 
-//     assert_eq!(response.status().as_u16(), 422)
-// }
+    assert_eq!(response.status().as_u16(), 422)
+}

@@ -14,8 +14,9 @@ pub struct VerifyTokenResponse {
 }
 
 pub async fn verify_token_handler(Json(request): Json<VerifyTokenRequest>) -> impl IntoResponse {
-    match validate_token(&request.token).await {
-        Ok(_) => Ok(()),
-        Err(_) => Err(AuthAPIError::InvalidCredentials),
+    if validate_token(&request.token).await.is_err() {
+        return Err(AuthAPIError::InvalidToken);
     }
+
+    Ok(())
 }

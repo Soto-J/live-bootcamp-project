@@ -1,4 +1,7 @@
-use auth_service::{domain::Email, utils::generate_auth_cookie};
+use auth_service::{
+    domain::{BannedTokenStore, Email},
+    utils::generate_auth_cookie,
+};
 
 use crate::helpers::{get_random_email, TestApp};
 
@@ -28,7 +31,24 @@ async fn should_return_401_if_invalid_token() {
 
     let response = app.post_verify_token(&token).await;
 
-    assert_eq!(response.status().as_u16(), 400)
+    assert_eq!(response.status().as_u16(), 401)
+}
+
+#[tokio::test]
+async fn should_return_401_if_banned_token() {
+    let app = TestApp::new().await;
+    let mut banned_token_store = app.banned_token_store.write().await;
+
+    let fake_token = "fake token";
+    banned_token_store.store_token(&fake_token).unwrap();
+
+    let token = serde_json::json!({
+        "token": fake_token
+    });
+
+    let response = app.post_verify_token(&token).await;
+
+    assert_eq!(response.status().as_u16(), 401)
 }
 
 #[tokio::test]
