@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    domain::{AuthAPIError, Email, Password},
+    domain::{AuthAPIError, Email, Password, User, UserStore},
     utils::generate_auth_cookie,
 };
 
@@ -32,15 +32,7 @@ pub async fn login_handler(
 
     let user_store = state.user_store.read().await;
 
-    match user_store
-        .validate_user(&valid_email, &valid_password)
-        .await
-    {
-        Ok(_) => {}
-        Err(_) => return (cookie_jar, Err(AuthAPIError::IncorrectCredentials)),
-    };
-
-    let _ = match user_store.get_user(&valid_email).await {
+    let _ = match get_user(&*user_store, &valid_email, &valid_password).await {
         Ok(user) => user,
         Err(_) => return (cookie_jar, Err(AuthAPIError::IncorrectCredentials)),
     };
@@ -60,4 +52,20 @@ fn parse_credentials(email: String, password: String) -> Result<(Email, Password
     let password = Password::parse(password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     Ok((email, password))
+}
+
+async fn get_user(
+    user_store: &dyn UserStore,
+    email: &Email,
+    password: &Password,
+) -> Result<User, AuthAPIError> {
+    user_store
+        .validate_user(&email, &password)
+        .await
+        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
+
+    match user_store.get_user(&email).await {
+        Ok(user) => Ok(user),
+        Err(_) => Err(AuthAPIError::IncorrectCredentials),
+    }
 }
