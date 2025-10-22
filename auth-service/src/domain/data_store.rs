@@ -1,4 +1,15 @@
+use axum_extra::extract::cookie::Cookie;
+
 use crate::domain::{Email, Password, User};
+
+#[derive(Debug, PartialEq)]
+pub enum UserStoreError {
+    UserAlreadyExists,
+    UserNotFound,
+    InvalidCredentials,
+    UnexpectedError,
+    IncorrectCredentials,
+}
 
 #[async_trait::async_trait]
 pub trait UserStore: Send + Sync {
@@ -9,10 +20,13 @@ pub trait UserStore: Send + Sync {
 }
 
 #[derive(Debug, PartialEq)]
-pub enum UserStoreError {
-    UserAlreadyExists,
-    UserNotFound,
-    InvalidCredentials,
-    UnexpectedError,
-    IncorrectCredentials,
+pub enum BannedTokenStoreError {
+    TokenNotFound,
+    FailedToStoreToken,
+}
+
+#[async_trait::async_trait]
+pub trait BannedTokenStore: Send + Sync {
+    fn store_token(&mut self, token: &str) -> Result<(), BannedTokenStoreError>;
+    fn has_token(&self, token: &str) -> bool;
 }

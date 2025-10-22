@@ -2,7 +2,7 @@ use crate::helpers::TestApp;
 
 use auth_service::{
     api::get_random_email,
-    domain::Email,
+    domain::{BannedTokenStore, Email},
     utils::{generate_auth_cookie, JWT_COOKIE_NAME},
 };
 use reqwest::Url;
@@ -25,7 +25,10 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     let response = app.post_logout().await;
 
-    assert_eq!(response.status().as_u16(), 200)
+    assert_eq!(response.status().as_u16(), 200);
+
+    let banned_token_store = app.banned_token_store.read().await;
+    assert!(banned_token_store.has_token(cookie.value()))
 }
 
 #[tokio::test]
@@ -76,3 +79,15 @@ async fn should_return_401_if_invalid_token() {
 
     assert_eq!(response.status().as_u16(), 401)
 }
+
+// #[tokio::test]
+// async fn should_return_422_if_malformed_credentials() {
+//     let app = TestApp::new().await;
+
+//     let email = Email::parse(get_random_email()).unwrap();
+//     let cookie = generate_auth_cookie(&email).unwrap();
+
+//     let response = app.post_logout().await;
+
+//     assert_eq!(response.status().as_u16(), 422)
+// }
