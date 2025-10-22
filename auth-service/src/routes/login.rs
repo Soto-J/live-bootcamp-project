@@ -55,7 +55,7 @@ fn parse_credentials(email: String, password: String) -> Result<(Email, Password
 }
 
 async fn get_user(
-    user_store: &dyn UserStore,
+    user_store: &(dyn UserStore + Send + Sync),
     email: &Email,
     password: &Password,
 ) -> Result<User, AuthAPIError> {
