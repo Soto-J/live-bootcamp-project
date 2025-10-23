@@ -30,9 +30,17 @@ pub async fn login_handler(
         _ => return (cookie_jar, Err(AuthAPIError::InvalidCredentials)),
     };
 
-    let user_store = state.user_store.read().await;
+    let user_store = &state.user_store.read().await;
 
-    let _ = match get_user(&*user_store, &valid_email, &valid_password).await {
+    if user_store
+        .validate_user(&valid_email, &valid_password)
+        .await
+        .is_err()
+    {
+        return (cookie_jar, Err(AuthAPIError::IncorrectCredentials));
+    }
+
+    let _ = match user_store.get_user(&valid_email).await {
         Ok(user) => user,
         Err(_) => return (cookie_jar, Err(AuthAPIError::IncorrectCredentials)),
     };

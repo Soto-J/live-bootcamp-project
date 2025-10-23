@@ -21,7 +21,7 @@ pub async fn logout_handler(
         Err(_) => return (cookie_jar, Err(AuthAPIError::InvalidToken)),
     };
 
-    let mut banned_token_store = state.banned_store.write().await;
+    let mut banned_token_store = state.banned_token_store.write().await;
 
     if banned_token_store.store_token(cookie.value()).is_err() {
         return (cookie_jar, Err(AuthAPIError::UnexpectedError));
