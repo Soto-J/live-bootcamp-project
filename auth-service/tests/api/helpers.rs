@@ -1,5 +1,5 @@
 use auth_service::{
-    app_state::AppState,
+    app_state::{AppState, BannedTokenStoreType},
     services::{HashmapUserStore, HashsetBannedTokenStore},
     utils::test,
     Application,
@@ -9,7 +9,6 @@ use fake::{
     Fake,
 };
 use reqwest::cookie::Jar;
-use serde::{Deserialize, Serialize};
 use std::{ops::Range, sync::Arc};
 use tokio::sync::RwLock;
 
@@ -17,8 +16,8 @@ use tokio::sync::RwLock;
 pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
+    pub banned_token_store: BannedTokenStoreType,
     pub http_client: reqwest::Client,
-    pub banned_token_store: Arc<RwLock<HashsetBannedTokenStore>>,
 }
 
 impl TestApp {

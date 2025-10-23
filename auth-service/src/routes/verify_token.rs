@@ -17,7 +17,10 @@ pub async fn verify_token_handler(
     State(state): State<AppState>,
     Json(request): Json<VerifyTokenRequest>,
 ) -> impl IntoResponse {
-    if validate_token(&request.token).await.is_err() {
+    if validate_token(&request.token, state.banned_token_store)
+        .await
+        .is_err()
+    {
         return Err(AuthAPIError::InvalidToken);
     }
 

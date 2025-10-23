@@ -1,6 +1,6 @@
 use crate::{
     app_state::AppState,
-    domain::{AuthAPIError, Email, Password, User, UserStore},
+    domain::{AuthAPIError, Email, Password},
     utils::generate_auth_cookie,
 };
 
@@ -60,20 +60,4 @@ fn parse_credentials(email: String, password: String) -> Result<(Email, Password
     let password = Password::parse(password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     Ok((email, password))
-}
-
-async fn get_user(
-    user_store: &(dyn UserStore + Send + Sync),
-    email: &Email,
-    password: &Password,
-) -> Result<User, AuthAPIError> {
-    user_store
-        .validate_user(&email, &password)
-        .await
-        .map_err(|_| AuthAPIError::IncorrectCredentials)?;
-
-    match user_store.get_user(&email).await {
-        Ok(user) => Ok(user),
-        Err(_) => Err(AuthAPIError::IncorrectCredentials),
-    }
 }

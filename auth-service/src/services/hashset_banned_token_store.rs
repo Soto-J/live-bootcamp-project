@@ -7,40 +7,40 @@ pub struct HashsetBannedTokenStore {
     tokens: HashSet<String>,
 }
 
+#[async_trait::async_trait]
 impl BannedTokenStore for HashsetBannedTokenStore {
-    fn store_token(&mut self, token: &str) -> Result<(), BannedTokenStoreError> {
-        match self.tokens.insert(token.into()) {
-            true => Ok(()),
-            false => Err(BannedTokenStoreError::FailedToStoreToken),
-        }
+    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
+        self.tokens.insert(token);
+        Ok(())
     }
 
-    fn has_token(&self, token: &str) -> bool {
-        self.tokens.contains(token)
+    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
+        Ok(self.tokens.contains(token))
     }
 }
 
 #[cfg(test)]
-mod test {
-    use crate::{domain::BannedTokenStore, services::HashsetBannedTokenStore};
+mod tests {
+    use super::*;
+    #[tokio::test]
+    async fn test_add_token() {
+        let mut store = HashsetBannedTokenStore::default();
+        let token = "test_token".to_owned();
 
-    #[test]
-    fn test_store_token() {
-        let mut banned_token_store = HashsetBannedTokenStore::default();
-        let token = "token";
+        let result = store.add_token(token.clone()).await;
 
-        let response = banned_token_store.store_token(token);
-
-        assert_eq!(response, Ok(()))
+        assert!(result.is_ok());
+        assert!(store.tokens.contains(&token));
     }
 
-    #[test]
-    fn test_has_toke() {
-        let mut banned_token_store = HashsetBannedTokenStore::default();
-        let token = "token";
+    #[tokio::test]
+    async fn test_contains_token() {
+        let mut store = HashsetBannedTokenStore::default();
+        let token = "test_token".to_owned();
+        store.tokens.insert(token.clone());
 
-        banned_token_store.store_token(token).unwrap();
+        let result = store.contains_token(&token).await;
 
-        assert!(banned_token_store.has_token(token))
+        assert!(result.unwrap());
     }
 }
