@@ -16,14 +16,21 @@ pub async fn logout_handler(
         None => return (cookie_jar, Err(AuthAPIError::MissingToken)),
     };
 
-    match validate_token(&cookie.value()).await {
-        Ok(_) => {}
+    let token = cookie.value().to_owned();
+
+    let _ = match validate_token(&token, state.banned_token_store.clone()).await {
+        Ok(claims) => claims,
         Err(_) => return (cookie_jar, Err(AuthAPIError::InvalidToken)),
     };
 
-    let mut banned_token_store = state.banned_token_store.write().await;
-
-    if banned_token_store.store_token(cookie.value()).is_err() {
+    if state
+        .banned_token_store
+        .write()
+        .await
+        .add_token(token)
+        .await
+        .is_err()
+    {
         return (cookie_jar, Err(AuthAPIError::UnexpectedError));
     }
 
