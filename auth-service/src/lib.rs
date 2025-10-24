@@ -14,7 +14,6 @@ use tower_http::{cors::CorsLayer, services::ServeDir};
 
 pub mod api;
 pub mod app_state;
-pub mod auth;
 pub mod domain;
 pub mod routes;
 pub mod services;
