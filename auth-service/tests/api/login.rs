@@ -101,28 +101,44 @@ pub async fn should_return_401_if_incorrect_credentials() {
             .await
             .expect("Could not deserialize response body to ErrorResponse")
             .error,
-        "Unathorized"
+        "Incorrect credentials"
     )
 }
 
 #[tokio::test]
-pub async fn should_return_422_if_malformed_credentials() {
+async fn should_return_422_if_malformed_credentials() {
     let app = TestApp::new().await;
 
-    let email = get_random_email();
-    let password = get_random_password();
+    let random_email = get_random_email();
 
-    let credentials = serde_json::json!(SignupRequest {
-        email,
-        password,
-        requires_2fa: true
+    let signup_body = serde_json::json!({
+        "email": random_email,
+        "password": "password123",
+        "requires2FA": false
     });
 
-    app.post_signup(&credentials).await;
+    let response = app.post_signup(&signup_body).await;
 
-    let malformed_credentials = serde_json::json!({});
+    assert_eq!(response.status().as_u16(), 201);
 
-    let response = app.post_login(&malformed_credentials).await;
+    let test_cases = [
+        serde_json::json!({
+            "password": "password123",
+        }),
+        serde_json::json!({
+            "email": random_email,
+        }),
+        serde_json::json!({}),
+    ];
 
-    assert_eq!(response.status().as_u16(), 422)
+    for test_case in test_cases {
+        let response = app.post_login(&test_case).await;
+
+        assert_eq!(
+            response.status().as_u16(),
+            422,
+            "Failed for input: {:?}",
+            test_case
+        );
+    }
 }

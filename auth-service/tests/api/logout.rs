@@ -1,11 +1,6 @@
 use crate::helpers::TestApp;
 
-use auth_service::{
-    api::get_random_email,
-    domain::{BannedTokenStore, Email},
-    utils::{generate_auth_cookie, JWT_COOKIE_NAME},
-    ErrorResponse,
-};
+use auth_service::{api::get_random_email, utils::JWT_COOKIE_NAME, ErrorResponse};
 use reqwest::Url;
 
 #[tokio::test]

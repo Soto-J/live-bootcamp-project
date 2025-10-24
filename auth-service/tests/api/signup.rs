@@ -101,7 +101,6 @@ pub async fn should_return_409_if_email_already_exists() {
     )
 }
 
-// unexpected error occurs.
 #[tokio::test]
 async fn should_return_500_unexpected_error() {
     let app = TestApp::new().await;
