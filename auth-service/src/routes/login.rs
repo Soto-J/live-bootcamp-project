@@ -15,9 +15,18 @@ pub struct LoginRequest {
     pub password: String,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct LoginResponse {
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+pub struct TwoFactorAuthResponse {
     pub message: String,
+    #[serde(rename = "loginAttemptId")]
+    pub login_attempt_id: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[serde(untagged)]
+pub enum LoginResponse {
+    RegularAuth,
+    TwoFactorAuth(TwoFactorAuthResponse),
 }
 
 pub async fn login_handler(
@@ -40,19 +49,23 @@ pub async fn login_handler(
         return (cookie_jar, Err(AuthAPIError::IncorrectCredentials));
     }
 
-    let _ = match user_store.get_user(&valid_email).await {
-        Ok(user) => user,
-        Err(_) => return (cookie_jar, Err(AuthAPIError::IncorrectCredentials)),
-    };
-
     let auth_cookie = match generate_auth_cookie(&valid_email) {
         Ok(cookie) => cookie,
-        Err(_) => return (cookie_jar, Err(AuthAPIError::UnexpectedError)),
+        _ => return (cookie_jar, Err(AuthAPIError::UnexpectedError)),
     };
 
     let updated_jar = cookie_jar.add(auth_cookie);
 
-    (updated_jar, Ok(StatusCode::OK.into_response()))
+    let user = match user_store.get_user(&valid_email).await {
+        Ok(user) => user,
+        _ => return (updated_jar, Err(AuthAPIError::IncorrectCredentials)),
+    };
+
+    if !user.has_2fa() {
+        return handle_no_2fa(&user.email(), updated_jar.clone()).await;
+    }
+
+    handle_2fa(updated_jar.clone()).await
 }
 
 fn parse_credentials(email: String, password: String) -> Result<(Email, Password), AuthAPIError> {
@@ -60,4 +73,37 @@ fn parse_credentials(email: String, password: String) -> Result<(Email, Password
     let password = Password::parse(password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     Ok((email, password))
+}
+
+async fn handle_2fa(
+    jar: CookieJar,
+) -> (
+    CookieJar,
+    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
+) {
+    println!("YUUUUR");
+    // TODO: Return a TwoFactorAuthResponse. The message should be "2FA required".
+    // The login attempt ID should be "123456". We will replace this hard-coded login attempt ID soon!
+
+    let response = Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
+        login_attempt_id: "123456".into(),
+        message: "2FA required".into(),
+    }));
+
+    (jar, Ok((StatusCode::PARTIAL_CONTENT, response)))
+}
+
+async fn handle_no_2fa(
+    email: &Email,
+    jar: CookieJar,
+) -> (
+    CookieJar,
+    Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
+) {
+    let response = Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
+        login_attempt_id: "123456".into(),
+        message: "2FA required".into(),
+    }));
+
+    (jar, Ok((StatusCode::PARTIAL_CONTENT, response)))
 }

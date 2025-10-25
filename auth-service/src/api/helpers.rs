@@ -16,7 +16,6 @@ pub struct TestApp {
     pub http_client: reqwest::Client,
 }
 
-#[allow(dead_code)]
 impl TestApp {
     pub async fn new() -> Self {
         let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));

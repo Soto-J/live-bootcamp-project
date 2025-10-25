@@ -23,4 +23,8 @@ impl User {
     pub fn password(&self) -> &Password {
         &self.password
     }
+
+    pub fn has_2fa(&self) -> bool {
+        self.requires_2fa
+    }
 }

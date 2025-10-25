@@ -41,6 +41,8 @@ async fn should_return_200_valid_token() {
     });
 
     let response = app.post_verify_token(&verify_token_body).await;
+
+    assert_eq!(response.status().as_u16(), 200);
 }
 
 #[tokio::test]
