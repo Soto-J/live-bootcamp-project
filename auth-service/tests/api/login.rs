@@ -1,8 +1,12 @@
 use crate::helpers::{get_random_email, get_random_password, TestApp};
 
 use auth_service::{
-    routes::{LoginRequest, SignupRequest},
-    utils::JWT_COOKIE_NAME,
+    domain::email::Email,
+    routes::{
+        login::{LoginRequest, TwoFactorAuthResponse},
+        signup::SignupRequest,
+    },
+    utils::constants::JWT_COOKIE_NAME,
     ErrorResponse,
 };
 
@@ -37,6 +41,46 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+}
+
+#[tokio::test]
+async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
+    let app = TestApp::new().await;
+
+    let email = get_random_email();
+    let password = get_random_password();
+
+    let signup_credentials = serde_json::json!(SignupRequest {
+        email: email.clone(),
+        password: password.clone(),
+        requires_2fa: true
+    });
+
+    app.post_signup(&signup_credentials).await;
+
+    let login_credentials = serde_json::json!(LoginRequest {
+        email: email.clone(),
+        password,
+    });
+
+    let response = app.post_login(&login_credentials).await;
+
+    assert_eq!(response.status().as_u16(), 206);
+    let json_body = response
+        .json::<TwoFactorAuthResponse>()
+        .await
+        .expect("Could not deserialize response body to TwoFactorAuthResponse");
+
+    assert_eq!(json_body.message, "2FA required".to_owned());
+
+    let two_fa_code_store = app.two_fa_code_store.read().await;
+
+    let response = two_fa_code_store
+        .get_code(&Email::parse(email).unwrap())
+        .await
+        .unwrap();
+
+    assert_eq!(json_body.login_attempt_id, response.0)
 }
 
 #[tokio::test]

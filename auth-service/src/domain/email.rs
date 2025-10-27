@@ -23,10 +23,6 @@ impl AsRef<str> for Email {
 mod test {
     use super::Email;
 
-    use crate::api::get_random_email;
-
-    use fake::{faker::internet::en::SafeEmail, Fake};
-
     #[test]
     fn empty_string_is_rejected() {
         let email = "".to_string();

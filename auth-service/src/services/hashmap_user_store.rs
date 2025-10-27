@@ -1,4 +1,9 @@
-use crate::domain::{Email, Password, User, UserStore, UserStoreError};
+use crate::domain::{
+    data_stores::{UserStore, UserStoreError},
+    email::Email,
+    password::Password,
+    user::User,
+};
 
 use std::collections::{hash_map::Entry, HashMap};
 
@@ -45,7 +50,7 @@ impl UserStore for HashmapUserStore {
 mod tests {
     use super::*;
 
-    use crate::api::get_random_password;
+    use crate::api::helpers::get_random_password;
 
     #[tokio::test]
     async fn test_add_user() {

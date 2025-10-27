@@ -1,4 +1,12 @@
-use app_state::AppState;
+use crate::{
+    app_state::app_state::AppState,
+    domain::error::AuthAPIError,
+    routes::{
+        login::login_handler, signup::signup_handler, verify_2fa::verify_2fa_handler,
+        verify_token::verify_token_handler,
+    },
+};
+
 use axum::{
     http::StatusCode,
     response::{IntoResponse, Response},
@@ -6,7 +14,6 @@ use axum::{
     serve::Serve,
     Json, Router,
 };
-use domain::AuthAPIError;
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
@@ -38,11 +45,11 @@ impl Application {
 
         let router = Router::new()
             .nest_service("/", ServeDir::new("assets"))
-            .route("/signup", post(routes::signup))
-            .route("/login", post(routes::login_handler))
-            .route("/logout", post(routes::logout_handler))
-            .route("/verify-2fa", post(routes::verify_2fa_handler))
-            .route("/verify-token", post(routes::verify_token_handler))
+            .route("/signup", post(signup_handler))
+            .route("/login", post(login_handler))
+            .route("/logout", post(login_handler))
+            .route("/verify-2fa", post(verify_2fa_handler))
+            .route("/verify-token", post(verify_token_handler))
             .with_state(app_state)
             .layer(cors);
 
@@ -75,6 +82,7 @@ impl IntoResponse for AuthAPIError {
             }
             AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing auth token"),
             AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid auth token"),
+            AuthAPIError::Missing2FA => (StatusCode::PARTIAL_CONTENT, "2FA Missing"),
             AuthAPIError::UnexpectedError => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }

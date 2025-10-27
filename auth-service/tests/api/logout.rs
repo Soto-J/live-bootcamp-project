@@ -1,6 +1,6 @@
-use crate::helpers::TestApp;
+use crate::helpers::{get_random_email, TestApp};
 
-use auth_service::{api::get_random_email, utils::JWT_COOKIE_NAME, ErrorResponse};
+use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
 use reqwest::Url;
 
 #[tokio::test]

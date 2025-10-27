@@ -1,5 +1,6 @@
+use crate::{app_state::app_state::BannedTokenStoreType, domain::email::Email};
+
 use super::constants::{JWT_COOKIE_NAME, JWT_SECRET, TOKEN_TTL_SECONDS};
-use crate::{app_state::BannedTokenStoreType, domain::Email};
 
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
@@ -100,7 +101,7 @@ mod tests {
     use std::sync::Arc;
     use tokio::sync::RwLock;
 
-    use crate::{domain::BannedTokenStore, services::HashsetBannedTokenStore};
+    use crate::{domain::data_stores::BannedTokenStore, services::HashsetBannedTokenStore};
 
     use super::*;
 

@@ -1,4 +1,4 @@
-use crate::domain::{Email, Password};
+use crate::domain::{email::Email, password::Password};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct User {
@@ -22,5 +22,9 @@ impl User {
 
     pub fn password(&self) -> &Password {
         &self.password
+    }
+
+    pub fn has_2fa(&self) -> bool {
+        self.requires_2fa
     }
 }

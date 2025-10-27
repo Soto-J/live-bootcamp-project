@@ -1,4 +1,6 @@
-use crate::{app_state::AppState, domain::AuthAPIError, utils::validate_token};
+use crate::{
+    app_state::app_state::AppState, domain::error::AuthAPIError, utils::auth::validate_token,
+};
 
 use axum::{extract::State, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
