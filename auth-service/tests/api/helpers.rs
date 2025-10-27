@@ -1,5 +1,5 @@
 use auth_service::{
-    app_state::app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType, UserStoreType},
+    app_state::app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType},
     services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore, MockEmailClient},
     utils::constants::test,
     Application,
@@ -17,7 +17,6 @@ pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
-    pub user_store: UserStoreType,
     pub two_fa_code_store: TwoFACodeStoreType,
     pub banned_token_store: BannedTokenStoreType,
 }
@@ -28,7 +27,7 @@ impl TestApp {
         let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
         let email_client = Arc::new(RwLock::new(MockEmailClient));
-        
+
         let app_state = AppState::new(
             user_store.clone(),
             banned_token_store.clone(),
@@ -57,7 +56,6 @@ impl TestApp {
             address,
             cookie_jar,
             http_client,
-            user_store,
             banned_token_store,
             two_fa_code_store,
         }
@@ -103,9 +101,13 @@ impl TestApp {
             .expect("Failed to execute request.")
     }
 
-    pub async fn verify_2fa_root(&self) -> reqwest::Response {
+    pub async fn post_verify_2fa<Body>(&self, body: &Body) -> reqwest::Response
+    where
+        Body: serde::Serialize,
+    {
         self.http_client
             .post(&format!("{}/verify-2fa", &self.address))
+            .json(body)
             .send()
             .await
             .expect("Failed to execute request.")

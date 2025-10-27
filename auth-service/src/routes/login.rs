@@ -14,7 +14,7 @@ use axum_extra::extract::CookieJar;
 use serde::{self, Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Validate)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Validate)]
 pub struct LoginRequest {
     pub email: String,
     pub password: String,
@@ -54,17 +54,17 @@ pub async fn login_handler(
         return (cookie_jar, Err(AuthAPIError::IncorrectCredentials));
     }
 
+    let user = match user_store.get_user(&valid_email).await {
+        Ok(user) => user,
+        _ => return (cookie_jar, Err(AuthAPIError::IncorrectCredentials)),
+    };
+
     let auth_cookie = match generate_auth_cookie(&valid_email) {
         Ok(cookie) => cookie,
         _ => return (cookie_jar, Err(AuthAPIError::UnexpectedError)),
     };
 
     let updated_jar = cookie_jar.add(auth_cookie);
-
-    let user = match user_store.get_user(&valid_email).await {
-        Ok(user) => user,
-        _ => return (updated_jar, Err(AuthAPIError::IncorrectCredentials)),
-    };
 
     if !user.has_2fa() {
         return handle_no_2fa(&user.email(), updated_jar.clone()).await;
@@ -128,10 +128,7 @@ async fn handle_no_2fa(
     CookieJar,
     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
 ) {
-    let response = Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
-        login_attempt_id: "123456".into(),
-        message: "2FA required".into(),
-    }));
+    let response = Json(LoginResponse::RegularAuth);
 
-    (jar, Ok((StatusCode::PARTIAL_CONTENT, response)))
+    (jar, Ok((StatusCode::OK, response)))
 }

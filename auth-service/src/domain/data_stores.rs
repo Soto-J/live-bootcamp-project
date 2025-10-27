@@ -1,5 +1,6 @@
 use crate::domain::{email::Email, password::Password, user::User};
 
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // ~~~ User Store
@@ -34,7 +35,7 @@ pub trait BannedTokenStore: Send + Sync {
 }
 
 // ~~~ 2FA Store
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoginAttemptId(String);
 
 impl AsRef<str> for LoginAttemptId {
@@ -92,7 +93,7 @@ pub trait TwoFACodeStore {
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError>;
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct TwoFACode(String);
 
 impl TwoFACode {
@@ -115,8 +116,14 @@ impl AsRef<str> for TwoFACode {
     }
 }
 
+impl From<TwoFACode> for String {
+    fn from(value: TwoFACode) -> Self {
+        value.0
+    }
+}
+
 impl Default for TwoFACode {
     fn default() -> Self {
-        Self(Default::default())
+        Self(Uuid::new_v4().to_string())
     }
 }
