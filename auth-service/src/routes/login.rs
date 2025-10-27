@@ -95,7 +95,7 @@ async fn handle_2fa(
         .two_fa_code_store
         .write()
         .await
-        .add_code(email.clone(), login_attempt_id.clone(), two_fa_code)
+        .add_code(email.clone(), login_attempt_id.clone(), two_fa_code.clone())
         .await;
 
     if add_login_attempt_id.is_err() {
@@ -106,7 +106,7 @@ async fn handle_2fa(
         .email_client
         .write()
         .await
-        .send_email(&email, "2FA Code", "554875")
+        .send_email(&email, "2FA Code", two_fa_code.as_ref())
         .await;
 
     if send_to_email_client.is_err() {
