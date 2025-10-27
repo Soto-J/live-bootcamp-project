@@ -1,6 +1,6 @@
 use crate::{
-    app_state::AppState,
-    services::{HashmapUserStore, HashsetBannedTokenStore},
+    app_state::app_state::AppState,
+    services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore},
     Application,
 };
 
@@ -19,9 +19,10 @@ pub struct TestApp {
 impl TestApp {
     pub async fn new() -> Self {
         let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
-        let banned_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
+        let two_fa_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
 
-        let app_state = AppState::new(user_store, banned_store);
+        let app_state = AppState::new(user_store, banned_token_store, two_fa_store);
 
         let address = "127.0.0.1:0";
 

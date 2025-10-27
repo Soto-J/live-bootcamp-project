@@ -28,11 +28,8 @@ impl AsRef<str> for Password {
 
 #[cfg(test)]
 mod tests {
-    use crate::api::{get_invalid_password, get_random_password};
 
     use super::Password;
-    use fake::faker::internet::en::Password as FakePassword;
-    use fake::Fake;
 
     #[test]
     fn empty_string_is_rejected() {

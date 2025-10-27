@@ -1,6 +1,6 @@
-use auth_service::{utils::JWT_COOKIE_NAME, ErrorResponse};
-
 use crate::helpers::{get_random_email, TestApp};
+
+use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
 
 #[tokio::test]
 async fn should_return_200_valid_token() {

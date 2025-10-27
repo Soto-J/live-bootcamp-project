@@ -1,7 +1,7 @@
 use crate::{
-    app_state::AppState,
-    domain::AuthAPIError,
-    utils::{validate_token, JWT_COOKIE_NAME},
+    app_state::app_state::AppState,
+    domain::error::AuthAPIError,
+    utils::{auth::validate_token, constants::JWT_COOKIE_NAME},
 };
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse};

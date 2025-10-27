@@ -1,6 +1,6 @@
 use crate::{
-    app_state::AppState,
-    domain::{AuthAPIError, Email, Password, User},
+    app_state::app_state::AppState,
+    domain::{email::Email, error::AuthAPIError, password::Password, user::User},
 };
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
@@ -20,7 +20,7 @@ pub struct SignupResponse {
     pub message: String,
 }
 
-pub async fn signup(
+pub async fn signup_handler(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {

@@ -1,7 +1,12 @@
 use crate::{
-    app_state::AppState,
-    domain::{AuthAPIError, Email, Password},
-    utils::generate_auth_cookie,
+    app_state::app_state::AppState,
+    domain::{
+        data_stores::{LoginAttemptId, TwoFACode},
+        email::Email,
+        error::AuthAPIError,
+        password::Password,
+    },
+    utils::auth::generate_auth_cookie,
 };
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
@@ -65,7 +70,7 @@ pub async fn login_handler(
         return handle_no_2fa(&user.email(), updated_jar.clone()).await;
     }
 
-    handle_2fa(updated_jar.clone()).await
+    handle_2fa(&valid_email, &state, updated_jar.clone()).await
 }
 
 fn parse_credentials(email: String, password: String) -> Result<(Email, Password), AuthAPIError> {
@@ -76,17 +81,29 @@ fn parse_credentials(email: String, password: String) -> Result<(Email, Password
 }
 
 async fn handle_2fa(
+    email: &Email,
+    state: &AppState,
     jar: CookieJar,
 ) -> (
     CookieJar,
     Result<(StatusCode, Json<LoginResponse>), AuthAPIError>,
 ) {
-    println!("YUUUUR");
-    // TODO: Return a TwoFactorAuthResponse. The message should be "2FA required".
-    // The login attempt ID should be "123456". We will replace this hard-coded login attempt ID soon!
+    let login_attempt_id = LoginAttemptId::default();
+    let two_fa_code = TwoFACode::default();
+
+    let add_login_attempt_id = state
+        .two_fa_code_store
+        .write()
+        .await
+        .add_code(email.clone(), login_attempt_id.clone(), two_fa_code)
+        .await;
+
+    if add_login_attempt_id.is_err() {
+        return (jar, Err(AuthAPIError::UnexpectedError));
+    }
 
     let response = Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
-        login_attempt_id: "123456".into(),
+        login_attempt_id: login_attempt_id.into(),
         message: "2FA required".into(),
     }));
 

@@ -1,4 +1,4 @@
-use crate::domain::{Email, Password};
+use crate::domain::{email::Email, password::Password};
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct User {
