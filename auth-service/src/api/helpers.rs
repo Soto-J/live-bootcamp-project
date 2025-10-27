@@ -1,6 +1,7 @@
 use crate::{
     app_state::app_state::AppState,
-    services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore},
+    domain::EmailClient,
+    services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore, MockEmailClient},
     Application,
 };
 
@@ -21,8 +22,9 @@ impl TestApp {
         let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
         let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let two_fa_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
+        let email_client = Arc::new(RwLock::new(MockEmailClient));
 
-        let app_state = AppState::new(user_store, banned_token_store, two_fa_store);
+        let app_state = AppState::new(user_store, banned_token_store, two_fa_store, email_client);
 
         let address = "127.0.0.1:0";
 
