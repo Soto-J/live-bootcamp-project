@@ -2,8 +2,8 @@ use crate::{
     app_state::app_state::AppState,
     domain::error::AuthAPIError,
     routes::{
-        login::login_handler, signup::signup_handler, verify_2fa::verify_2fa_handler,
-        verify_token::verify_token_handler,
+        login::login_handler, logout::logout_handler, signup::signup_handler,
+        verify_2fa::verify_2fa_handler, verify_token::verify_token_handler,
     },
 };
 
@@ -47,7 +47,7 @@ impl Application {
             .nest_service("/", ServeDir::new("assets"))
             .route("/signup", post(signup_handler))
             .route("/login", post(login_handler))
-            .route("/logout", post(login_handler))
+            .route("/logout", post(logout_handler))
             .route("/verify-2fa", post(verify_2fa_handler))
             .route("/verify-token", post(verify_token_handler))
             .with_state(app_state)
