@@ -102,6 +102,17 @@ async fn handle_2fa(
         return (jar, Err(AuthAPIError::UnexpectedError));
     }
 
+    let send_to_email_client: Result<(), String> = state
+        .email_client
+        .write()
+        .await
+        .send_email(&email, "2FA Code", "554875")
+        .await;
+
+    if send_to_email_client.is_err() {
+        return (jar, Err(AuthAPIError::UnexpectedError));
+    }
+
     let response = Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
         login_attempt_id: login_attempt_id.into(),
         message: "2FA required".into(),
