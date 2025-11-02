@@ -31,7 +31,7 @@ async fn configure_mysql() -> Pool<MySql> {
         .await
         .expect("Failed to create MySql connection pool!");
 
-    // Run database migrations against our test database! 
+    // Run database migrations 
     sqlx::migrate!()
         .run(&mysql_pool)
         .await
