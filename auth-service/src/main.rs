@@ -1,6 +1,14 @@
 use auth_service::{
-    Application, app_state::app_state::AppState, get_mysql_pool, services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore, MockEmailClient}, utils::constants::{DATABASE_URL, prod}
+    app_state::app_state::AppState,
+    get_mysql_pool,
+    services::{
+        data_stores::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore},
+        MockEmailClient,
+    },
+    utils::constants::{prod, DATABASE_URL},
+    Application,
 };
+
 use sqlx::{MySql, Pool};
 use std::sync::Arc;
 use tokio::sync::RwLock;
@@ -23,15 +31,13 @@ async fn main() {
     app.run().await.expect("Failed to run app.")
 }
 
-
-
 async fn configure_mysql() -> Pool<MySql> {
     // Create a new database connection pool
     let mysql_pool = get_mysql_pool(&DATABASE_URL)
         .await
         .expect("Failed to create MySql connection pool!");
 
-    // Run database migrations 
+    // Run database migrations
     sqlx::migrate!()
         .run(&mysql_pool)
         .await

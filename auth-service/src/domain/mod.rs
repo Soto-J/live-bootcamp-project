@@ -7,3 +7,5 @@ pub mod user;
 
 pub use email::*;
 pub use email_client::*;
+pub use password::*;
+pub use user::*;

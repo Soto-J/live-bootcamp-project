@@ -1,7 +1,9 @@
 use crate::{
     app_state::app_state::AppState,
-    domain::EmailClient,
-    services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore, MockEmailClient},
+    services::{
+        data_stores::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore},
+        MockEmailClient,
+    },
     Application,
 };
 

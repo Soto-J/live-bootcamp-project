@@ -1,8 +1,6 @@
 use crate::domain::{
     data_stores::{UserStore, UserStoreError},
-    email::Email,
-    password::Password,
-    user::User,
+    Email, Password, User,
 };
 
 use std::collections::{hash_map::Entry, HashMap};

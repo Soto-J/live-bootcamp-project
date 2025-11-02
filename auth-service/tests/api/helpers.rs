@@ -1,9 +1,13 @@
 use auth_service::{
     app_state::app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType},
-    services::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore, MockEmailClient},
+    services::{
+        data_stores::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore},
+        MockEmailClient,
+    },
     utils::constants::test,
     Application,
 };
+
 use fake::{
     faker::internet::en::{self, SafeEmail},
     Fake,

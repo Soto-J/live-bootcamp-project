@@ -43,14 +43,9 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        api::helpers::get_random_email,
-        domain::{
-            data_stores::{LoginAttemptId, TwoFACode, TwoFACodeStore, TwoFACodeStoreError},
-            email::Email,
-        },
-        services::HashmapTwoFACodeStore,
-    };
+    use super::*;
+    
+    use crate::api::helpers::get_random_email;
 
     #[tokio::test]
     async fn test_add_code() {
@@ -93,17 +88,17 @@ mod tests {
         let email = Email::parse(get_random_email()).unwrap();
         let two_fa_code = TwoFACode::default();
         let login_attempt_id = LoginAttemptId::default();
-        
+
         let add_code_response = two_fa_store
-        .add_code(email.clone(), login_attempt_id, two_fa_code)
-        .await;
-    
-    assert!(add_code_response.is_ok());
+            .add_code(email.clone(), login_attempt_id, two_fa_code)
+            .await;
+
+        assert!(add_code_response.is_ok());
 
         let get_code_response = two_fa_store.get_code(&email).await;
 
         assert!(get_code_response.is_ok());
-        
+
         let email = Email::parse(get_random_email()).unwrap();
         // in the case code doesnt exist
         let empty_code_response = two_fa_store.get_code(&email).await;
