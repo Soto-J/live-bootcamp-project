@@ -16,6 +16,7 @@ use axum::{
 };
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
+use sqlx::{MySqlPool, mysql::MySqlPoolOptions};
 use std::error::Error;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 
@@ -94,4 +95,8 @@ impl IntoResponse for AuthAPIError {
 
         (status, body).into_response()
     }
+}
+
+pub async fn get_mysql_pool(url: &str) -> Result<MySqlPool, sqlx::Error> {
+    MySqlPoolOptions::new().max_connections(5).connect(url).await
 }
