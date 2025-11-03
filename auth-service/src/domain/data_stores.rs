@@ -26,6 +26,7 @@ pub trait UserStore: Send + Sync {
 pub enum BannedTokenStoreError {
     TokenNotFound,
     FailedToStoreToken,
+    UnexpectedError,
 }
 
 #[async_trait::async_trait]

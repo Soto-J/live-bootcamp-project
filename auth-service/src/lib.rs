@@ -1,6 +1,5 @@
 use crate::{
     app_state::app_state::AppState,
-    domain::error::AuthAPIError,
     routes::{
         login::login_handler, logout::logout_handler, signup::signup_handler,
         verify_2fa::verify_2fa_handler, verify_token::verify_token_handler,
@@ -8,15 +7,9 @@ use crate::{
     utils::constants::DATABASE_URL,
 };
 
-use axum::{
-    http::StatusCode,
-    response::{IntoResponse, Response},
-    routing::post,
-    serve::Serve,
-    Json, Router,
-};
+use axum::{routing::post, serve::Serve, Router};
+use redis::{Client, RedisResult};
 use reqwest::Method;
-use serde::{Deserialize, Serialize};
 use sqlx::{mysql::MySqlPoolOptions, MySqlPool};
 use std::error::Error;
 use tower_http::{cors::CorsLayer, services::ServeDir};
@@ -69,10 +62,6 @@ impl Application {
     }
 }
 
-
-
-
-
 pub async fn configure_mysql() -> MySqlPool {
     // Create a new database connection pool
     let mysql_pool = get_mysql_pool(&DATABASE_URL)
@@ -93,4 +82,9 @@ pub async fn get_mysql_pool(url: &str) -> Result<MySqlPool, sqlx::Error> {
         .max_connections(5)
         .connect(url)
         .await
+}
+
+pub fn get_redis_client(redis_hostname: String) -> RedisResult<Client> {
+    let redis_url = format!("redis://{}/", redis_hostname);
+    redis::Client::open(redis_url)
 }
