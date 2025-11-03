@@ -60,23 +60,28 @@ impl UserStore for MySqlUserStore {
     }
 
     async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
-        sqlx::query_as!(
-            User,
+        let record = sqlx::query!(
             r#"
-            SELECT 
-                email, 
-                password_hash AS password, 
-                requires_2fa as "requires_2fa: bool"
-            FROM 
-                users
-            WHERE
-                email = ?
-            "#,
+        SELECT 
+            email, 
+            password_hash, 
+            requires_2fa as "requires_2fa: bool"
+        FROM 
+            users
+        WHERE
+            email = ?
+        "#,
             email.as_ref()
         )
         .fetch_one(&self.pool)
         .await
-        .map_err(|_| UserStoreError::UserNotFound)
+        .map_err(|_| UserStoreError::UserNotFound)?;
+
+        let email = Email::parse(record.email).map_err(|_| UserStoreError::UnexpectedError)?;
+
+        let password = Password::from(record.password_hash); // Keep From for Password since it's already hashed
+
+        Ok(User::new(email, password, record.requires_2fa))
     }
 
     async fn validate_user(

@@ -183,9 +183,8 @@ pub async fn configure_database(db_conn_string: &str, db_name: &str) {
 
 pub async fn drop_mysql_database(db_name: &str) {
     let mysql_conn_url = MYSQL_SERVER_URL.to_owned();
-    let mysql_conn_url_with_db = format!("{}/{}", mysql_conn_url, db_name);
 
-    let mysql_pool = get_mysql_pool(&mysql_conn_url_with_db)
+    let mysql_pool = get_mysql_pool(&mysql_conn_url)
         .await
         .expect("Failed to create MySql connection pool.");
 
@@ -193,6 +192,8 @@ pub async fn drop_mysql_database(db_name: &str) {
         .execute(&mysql_pool)
         .await
         .expect("Failed to drop database");
+
+    mysql_pool.close().await
 }
 
 pub fn get_random_email() -> String {
