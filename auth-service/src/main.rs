@@ -1,11 +1,11 @@
 use auth_service::{
     app_state::app_state::AppState,
-    configure_mysql,
+    configure_mysql, get_redis_client,
     services::{
         data_stores::{HashmapTwoFACodeStore, HashsetBannedTokenStore, MySqlUserStore},
         MockEmailClient,
     },
-    utils::constants::prod,
+    utils::constants::{prod, REDIS_HOST_NAME},
     Application,
 };
 
@@ -28,4 +28,11 @@ async fn main() {
         .expect("Failed to build app.");
 
     app.run().await.expect("Failed to run app.")
+}
+
+fn configure_redis() -> redis::Connection {
+    get_redis_client(REDIS_HOST_NAME.to_owned())
+        .expect("Failed to get Rediss client")
+        .get_connection()
+        .expect("Failed to get Redis connection")
 }

@@ -3,7 +3,10 @@ use lazy_static::lazy_static;
 use std::env as std_env;
 
 pub const TOKEN_TTL_SECONDS: i64 = 600; // Token valid for 10 minutes
+
 pub const JWT_COOKIE_NAME: &str = "jwt";
+
+pub const DEFAULT_REDIS_HOSTNAME: &str = "127.0.0.1";
 
 lazy_static! {
     pub static ref JWT_SECRET: String = set_token();
@@ -11,6 +14,7 @@ lazy_static! {
     pub static ref MYSQL_SERVER_URL: String = set_mysql_server_url();
     pub static ref MYSQL_PASSWORD: String = set_mysql_password();
     pub static ref MYSQL_ROOT_PASSWORD: String = set_mysql_root_password();
+    pub static ref REDIS_HOST_NAME: String = set_redis_host();
 }
 
 pub mod env {
@@ -19,6 +23,7 @@ pub mod env {
     pub const MYSQL_SERVER_URL_ENV_VAR: &str = "MYSQL_SERVER_URL";
     pub const MYSQL_PASSWORD_ENV_VAR: &str = "MYSQL_PASSWORD";
     pub const MYSQL_ROOT_PASSWORD_ENV_VAR: &str = "MYSQL_ROOT_PASSWORD";
+    pub const REDIS_HOST_NAME_ENV_VAR: &str = "REDIS_HOST_NAME";
 }
 
 pub mod prod {
@@ -84,4 +89,9 @@ fn set_mysql_root_password() -> String {
     }
 
     secret
+}
+
+fn set_redis_host() -> String {
+    dotenv().ok();
+    std_env::var(env::REDIS_HOST_NAME_ENV_VAR).unwrap_or(DEFAULT_REDIS_HOSTNAME.to_owned())
 }
