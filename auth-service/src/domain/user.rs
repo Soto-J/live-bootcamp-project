@@ -4,10 +4,10 @@ use crate::domain::{email::Email, password::Password};
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct User {
-    email: Email,
-    password: Password,
+    pub email: Email,
+    pub password: Password,
     #[serde(rename = "requires2FA")]
-    requires_2fa: bool,
+    pub requires_2fa: bool,
 }
 
 impl User {
@@ -31,3 +31,4 @@ impl User {
         self.requires_2fa
     }
 }
+

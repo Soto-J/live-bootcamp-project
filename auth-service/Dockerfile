@@ -16,6 +16,7 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 # Build application
 COPY . .
+ENV SQLX_OFFLINE true
 RUN cargo build --release --bin auth-service
 
 # We do not need the Rust toolchain to run the binary!
@@ -25,3 +26,4 @@ WORKDIR /app
 COPY --from=builder /app/target/release/auth-service /usr/local/bin
 COPY --from=builder /app/assets /app/assets
 ENTRYPOINT ["/usr/local/bin/auth-service"]
+

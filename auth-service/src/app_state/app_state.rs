@@ -1,12 +1,15 @@
-use crate::domain::{
-    data_stores::{BannedTokenStore, TwoFACodeStore, UserStore},
-    EmailClient,
+use crate::{
+    domain::{
+        data_stores::{BannedTokenStore, TwoFACodeStore},
+        EmailClient,
+    },
+    services::data_stores::MySqlUserStore,
 };
 
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
-pub type UserStoreType = Arc<RwLock<dyn UserStore + Send + Sync>>;
+pub type UserStoreType = Arc<RwLock<MySqlUserStore>>;
 pub type BannedTokenStoreType = Arc<RwLock<dyn BannedTokenStore + Send + Sync>>;
 pub type TwoFACodeStoreType = Arc<RwLock<dyn TwoFACodeStore + Send + Sync>>;
 pub type EmailClientType = Arc<RwLock<dyn EmailClient + Send + Sync>>;

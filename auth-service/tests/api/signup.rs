@@ -1,4 +1,6 @@
-use crate::helpers::{get_invalid_password, get_random_email, get_random_password, TestApp};
+use crate::helpers::{
+    drop_mysql_database, get_invalid_password, get_random_email, get_random_password, TestApp,
+};
 
 use auth_service::{
     routes::signup::{SignupRequest, SignupResponse},
@@ -29,6 +31,8 @@ pub async fn should_return_201_if_valid_input() {
             .expect("Could not deserialize response body to UserBody"),
         expected_response
     );
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -71,6 +75,8 @@ pub async fn should_return_400_if_invalid_input() {
             "Invalid credentials"
         );
     }
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -98,10 +104,13 @@ pub async fn should_return_409_if_email_already_exists() {
             .expect("Could not deserialize response body to ErrorResponse")
             .error,
         "User already exists"
-    )
+    );
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
 async fn should_return_500_unexpected_error() {
     let app = TestApp::new().await;
+    drop_mysql_database(&app.db_name).await
 }

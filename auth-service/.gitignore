@@ -1,2 +1,22 @@
+# Build artifacts
+../target
 /target
+
+# Environment files
 .env
+.env.*
+!.env.example
+
+# SQLx offline mode cache (optional - some teams commit this)
+.sqlx/
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db

@@ -1,6 +1,8 @@
 use crate::{
     app_state::app_state::AppState,
-    domain::{email::Email, error::AuthAPIError, password::Password, user::User},
+    domain::{
+        data_stores::UserStore, email::Email, error::AuthAPIError, password::Password, user::User,
+    },
 };
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};

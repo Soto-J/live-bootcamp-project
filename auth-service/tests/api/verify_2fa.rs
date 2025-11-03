@@ -1,4 +1,4 @@
-use crate::helpers::{get_random_email, TestApp};
+use crate::helpers::{TestApp, drop_mysql_database, get_random_email};
 use auth_service::{
     api::helpers::get_random_password,
     domain::{data_stores::LoginAttemptId, Email},
@@ -78,6 +78,8 @@ async fn should_return_200_if_correct_code() {
         .any(|cookie| cookie.name() == JWT_COOKIE_NAME));
 
     assert_eq!(response.status().as_u16(), 200);
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -103,6 +105,8 @@ async fn should_return_400_if_invalid_input() {
             "Invalid credentials".to_owned()
         )
     }
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -174,7 +178,9 @@ async fn should_return_401_if_incorrect_credentials() {
             .expect("Could not deserialize response body to ErrorResponse")
             .error,
         "Incorrect credentials".to_owned()
-    )
+    );
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -262,7 +268,9 @@ async fn should_return_401_if_old_code() {
             .expect("Could not deserialize response body to ErrorResponse")
             .error,
         "Incorrect credentials".to_owned()
-    )
+    );
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -338,6 +346,8 @@ async fn should_return_401_if_same_code_twice() {
         .await;
 
     assert_eq!(second_verify_2fa_resposne.status().as_u16(), 401);
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -348,5 +358,7 @@ pub async fn should_return_422_if_malformed_input() {
 
     let response = app.post_verify_2fa(&body).await;
 
-    assert_eq!(response.status().as_u16(), 422)
+    assert_eq!(response.status().as_u16(), 422);
+
+    drop_mysql_database(&app.db_name).await
 }

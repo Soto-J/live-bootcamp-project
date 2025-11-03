@@ -26,6 +26,18 @@ impl AsRef<str> for Password {
     }
 }
 
+impl From<String> for Password {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+// impl From<Password> for String {
+//     fn from(value: Password) -> Self {
+//         value.0
+//     }
+// }
+
 #[cfg(test)]
 mod tests {
 
