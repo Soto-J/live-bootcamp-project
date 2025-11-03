@@ -1,15 +1,14 @@
 use auth_service::{
     app_state::app_state::AppState,
-    get_mysql_pool,
+    configure_mysql,
     services::{
-        data_stores::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore},
+        data_stores::{HashmapTwoFACodeStore, HashsetBannedTokenStore, MySqlUserStore},
         MockEmailClient,
     },
-    utils::constants::{prod, DATABASE_URL},
+    utils::constants::prod,
     Application,
 };
 
-use sqlx::{MySql, Pool};
 use std::sync::Arc;
 use tokio::sync::RwLock;
 
@@ -17,7 +16,7 @@ use tokio::sync::RwLock;
 async fn main() {
     let mysql_pool = configure_mysql().await;
 
-    let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
+    let user_store = Arc::new(RwLock::new(MySqlUserStore::new(mysql_pool)));
     let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
     let two_fa_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
     let email_client = Arc::new(RwLock::new(MockEmailClient));
@@ -29,19 +28,4 @@ async fn main() {
         .expect("Failed to build app.");
 
     app.run().await.expect("Failed to run app.")
-}
-
-async fn configure_mysql() -> Pool<MySql> {
-    // Create a new database connection pool
-    let mysql_pool = get_mysql_pool(&DATABASE_URL)
-        .await
-        .expect("Failed to create MySql connection pool!");
-
-    // Run database migrations
-    sqlx::migrate!()
-        .run(&mysql_pool)
-        .await
-        .expect("Failed to run migrations");
-
-    mysql_pool
 }

@@ -20,6 +20,12 @@ impl AsRef<str> for Email {
     }
 }
 
+impl From<String> for Email {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
 #[cfg(test)]
 mod test {
     use super::Email;

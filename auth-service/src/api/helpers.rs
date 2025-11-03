@@ -1,7 +1,8 @@
 use crate::{
     app_state::app_state::AppState,
+    configure_mysql,
     services::{
-        data_stores::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore},
+        data_stores::{HashmapTwoFACodeStore, HashsetBannedTokenStore, MySqlUserStore},
         MockEmailClient,
     },
     Application,
@@ -21,7 +22,9 @@ pub struct TestApp {
 
 impl TestApp {
     pub async fn new() -> Self {
-        let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
+        let mysql_pool = configure_mysql().await;
+
+        let user_store = Arc::new(RwLock::new(MySqlUserStore::new(mysql_pool)));
         let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let two_fa_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
         let email_client = Arc::new(RwLock::new(MockEmailClient));

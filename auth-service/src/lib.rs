@@ -5,6 +5,7 @@ use crate::{
         login::login_handler, logout::logout_handler, signup::signup_handler,
         verify_2fa::verify_2fa_handler, verify_token::verify_token_handler,
     },
+    utils::constants::DATABASE_URL,
 };
 
 use axum::{
@@ -16,7 +17,7 @@ use axum::{
 };
 use reqwest::Method;
 use serde::{Deserialize, Serialize};
-use sqlx::{MySqlPool, mysql::MySqlPoolOptions};
+use sqlx::{mysql::MySqlPoolOptions, MySqlPool};
 use std::error::Error;
 use tower_http::{cors::CorsLayer, services::ServeDir};
 
@@ -97,6 +98,24 @@ impl IntoResponse for AuthAPIError {
     }
 }
 
+pub async fn configure_mysql() -> MySqlPool {
+    // Create a new database connection pool
+    let mysql_pool = get_mysql_pool(&DATABASE_URL)
+        .await
+        .expect("Failed to create MySql connection pool!");
+
+    // Run database migrations
+    sqlx::migrate!()
+        .run(&mysql_pool)
+        .await
+        .expect("Failed to run migrations");
+
+    mysql_pool
+}
+
 pub async fn get_mysql_pool(url: &str) -> Result<MySqlPool, sqlx::Error> {
-    MySqlPoolOptions::new().max_connections(5).connect(url).await
+    MySqlPoolOptions::new()
+        .max_connections(5)
+        .connect(url)
+        .await
 }

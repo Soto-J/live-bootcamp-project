@@ -1,4 +1,4 @@
-use crate::helpers::{get_random_email, TestApp};
+use crate::helpers::{drop_mysql_database, get_random_email, TestApp};
 
 use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
 
@@ -43,6 +43,8 @@ async fn should_return_200_valid_token() {
     let response = app.post_verify_token(&verify_token_body).await;
 
     assert_eq!(response.status().as_u16(), 200);
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -55,7 +57,9 @@ async fn should_return_401_if_invalid_token() {
 
     let response = app.post_verify_token(&token).await;
 
-    assert_eq!(response.status().as_u16(), 401)
+    assert_eq!(response.status().as_u16(), 401);
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -114,6 +118,8 @@ async fn should_return_401_if_banned_token() {
             .error,
         "Invalid auth token".to_owned()
     );
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -124,5 +130,7 @@ async fn should_return_422_if_malformed_input() {
 
     let response = app.post_verify_token(&token).await;
 
-    assert_eq!(response.status().as_u16(), 422)
+    assert_eq!(response.status().as_u16(), 422);
+
+    drop_mysql_database(&app.db_name).await
 }

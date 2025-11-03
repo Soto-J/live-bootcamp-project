@@ -1,10 +1,11 @@
 use auth_service::{
     app_state::app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType},
+    get_mysql_pool,
     services::{
-        data_stores::{HashmapTwoFACodeStore, HashmapUserStore, HashsetBannedTokenStore},
+        data_stores::{HashmapTwoFACodeStore, HashsetBannedTokenStore, MySqlUserStore},
         MockEmailClient,
     },
-    utils::constants::test,
+    utils::constants::{test, DATABASE_URL, MYSQL_SERVER_URL},
     Application,
 };
 
@@ -13,8 +14,10 @@ use fake::{
     Fake,
 };
 use reqwest::cookie::Jar;
+use sqlx::MySqlPool;
 use std::{ops::Range, sync::Arc};
 use tokio::sync::RwLock;
+use uuid::Uuid;
 
 #[derive(Clone)]
 pub struct TestApp {
@@ -23,11 +26,14 @@ pub struct TestApp {
     pub http_client: reqwest::Client,
     pub two_fa_code_store: TwoFACodeStoreType,
     pub banned_token_store: BannedTokenStoreType,
+    pub db_name: String,
 }
 
 impl TestApp {
     pub async fn new() -> Self {
-        let user_store = Arc::new(RwLock::new(HashmapUserStore::default()));
+        let (mysql_pool, db_name) = configure_mysql().await;
+
+        let user_store = Arc::new(RwLock::new(MySqlUserStore::new(mysql_pool)));
         let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
         let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
         let email_client = Arc::new(RwLock::new(MockEmailClient));
@@ -62,6 +68,7 @@ impl TestApp {
             http_client,
             banned_token_store,
             two_fa_code_store,
+            db_name,
         }
     }
 
@@ -128,6 +135,64 @@ impl TestApp {
             .await
             .expect("Failed to execute request.")
     }
+}
+
+pub async fn configure_mysql() -> (MySqlPool, String) {
+    // Creating a new database for each test case
+
+    let mysql_conn_url = MYSQL_SERVER_URL.to_owned();
+    let db_name = Uuid::new_v4().to_string();
+
+    configure_database(&mysql_conn_url, &db_name).await;
+
+    let mysql_conn_url_with_db = format!("{}/{}", mysql_conn_url, db_name);
+
+    let mysql_pool = get_mysql_pool(&mysql_conn_url_with_db)
+        .await
+        .expect("Configure mysql: Failed to create MySql connection pool.");
+
+    (mysql_pool, db_name)
+}
+
+pub async fn configure_database(db_conn_string: &str, db_name: &str) {
+    let mysql_pool = get_mysql_pool(&db_conn_string)
+        .await
+        .expect("Configure Database: Failed to create MySql connection pool.");
+
+    // Create new database
+    sqlx::query(&format!(r#"CREATE DATABASE `{}`;"#, db_name))
+        .execute(&mysql_pool)
+        .await
+        .expect("Configure Database: Failed to create database.");
+
+    mysql_pool.close().await;
+
+    // Connect to new database
+    let mysql_conn_url_with_db = format!("{}/{}", db_conn_string, db_name);
+
+    let mysql_pool = get_mysql_pool(&mysql_conn_url_with_db)
+        .await
+        .expect("Failed to create MySql connection pool.");
+
+    // Run migrations against new database
+    sqlx::migrate!()
+        .run(&mysql_pool)
+        .await
+        .expect("Failed to migrate database.");
+}
+
+pub async fn drop_mysql_database(db_name: &str) {
+    let mysql_conn_url = MYSQL_SERVER_URL.to_owned();
+    let mysql_conn_url_with_db = format!("{}/{}", mysql_conn_url, db_name);
+
+    let mysql_pool = get_mysql_pool(&mysql_conn_url_with_db)
+        .await
+        .expect("Failed to create MySql connection pool.");
+
+    sqlx::query(&format!(r#"DROP DATABASE `{}`"#, db_name))
+        .execute(&mysql_pool)
+        .await
+        .expect("Failed to drop database");
 }
 
 pub fn get_random_email() -> String {

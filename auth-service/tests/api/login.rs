@@ -1,4 +1,4 @@
-use crate::helpers::{get_random_email, get_random_password, TestApp};
+use crate::helpers::{drop_mysql_database, get_random_email, get_random_password, TestApp};
 
 use auth_service::{
     domain::email::Email,
@@ -41,6 +41,8 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -80,7 +82,9 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         .await
         .unwrap();
 
-    assert_eq!(json_body.login_attempt_id, response.0)
+    assert_eq!(json_body.login_attempt_id, response.0);
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -114,7 +118,9 @@ pub async fn should_return_400_if_invalid_credentials() {
             .expect("Could not deserialize response body to ErrorResponse")
             .error,
         "Invalid credentials"
-    )
+    );
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -146,7 +152,9 @@ pub async fn should_return_401_if_incorrect_credentials() {
             .expect("Could not deserialize response body to ErrorResponse")
             .error,
         "Incorrect credentials"
-    )
+    );
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -185,4 +193,6 @@ async fn should_return_422_if_malformed_credentials() {
             test_case
         );
     }
+
+    drop_mysql_database(&app.db_name).await
 }

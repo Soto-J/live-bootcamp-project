@@ -1,4 +1,4 @@
-use crate::helpers::{get_random_email, TestApp};
+use crate::helpers::{drop_mysql_database, get_random_email, TestApp};
 
 use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
 use reqwest::Url;
@@ -55,6 +55,8 @@ async fn should_return_200_if_valid_jwt_cookie() {
         .expect("Failed to check if token is banned");
 
     assert!(contains_token);
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -83,6 +85,8 @@ async fn should_return_400_if_jwt_cookie_missing() {
             .error,
         "Missing auth token".to_owned()
     );
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -138,6 +142,8 @@ async fn should_return_400_if_logout_called_twice_in_a_row() {
             .error,
         "Missing auth token".to_owned()
     );
+
+    drop_mysql_database(&app.db_name).await
 }
 
 #[tokio::test]
@@ -171,4 +177,6 @@ async fn should_return_401_if_invalid_token() {
             .error,
         "Invalid auth token".to_owned()
     );
+
+    drop_mysql_database(&app.db_name).await
 }
