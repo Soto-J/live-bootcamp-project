@@ -5,7 +5,7 @@ use auth_service::{
         data_stores::{HashmapTwoFACodeStore, HashsetBannedTokenStore, MySqlUserStore},
         MockEmailClient,
     },
-    utils::constants::{test, DATABASE_URL, MYSQL_SERVER_URL},
+    utils::constants::{test, MYSQL_SERVER_URL},
     Application,
 };
 

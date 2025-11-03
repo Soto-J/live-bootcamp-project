@@ -1,14 +1,13 @@
-use crate::helpers::{TestApp, drop_mysql_database, get_random_email};
+use crate::helpers::{drop_mysql_database, get_random_email, TestApp};
 use auth_service::{
     api::helpers::get_random_password,
-    domain::{data_stores::LoginAttemptId, Email},
+    domain::{Email, data_stores::LoginAttemptId, error::ErrorResponse},
     routes::{
         login::{LoginRequest, LoginResponse, TwoFactorAuthResponse},
         signup::{SignupRequest, SignupResponse},
         verify_2fa::Verify2FARequest,
     },
     utils::constants::JWT_COOKIE_NAME,
-    ErrorResponse,
 };
 
 #[tokio::test]

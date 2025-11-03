@@ -1,6 +1,6 @@
 use crate::helpers::{drop_mysql_database, get_random_email, TestApp};
 
-use auth_service::{utils::constants::JWT_COOKIE_NAME, ErrorResponse};
+use auth_service::{domain::error::ErrorResponse, utils::constants::JWT_COOKIE_NAME};
 use reqwest::Url;
 
 #[tokio::test]

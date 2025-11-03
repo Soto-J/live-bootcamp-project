@@ -3,8 +3,8 @@ use crate::helpers::{
 };
 
 use auth_service::{
+    domain::error::ErrorResponse,
     routes::signup::{SignupRequest, SignupResponse},
-    ErrorResponse,
 };
 
 #[tokio::test]
