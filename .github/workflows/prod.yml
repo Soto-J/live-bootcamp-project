@@ -99,6 +99,7 @@ jobs:
             cd ~
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
             export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
+            export SQLX_OFFLINE=true
             docker compose down
             docker compose pull
             docker compose up -d
