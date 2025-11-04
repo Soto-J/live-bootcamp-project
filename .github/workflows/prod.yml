@@ -125,6 +125,8 @@ jobs:
             cd ~
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
             export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
+            export DATABASE_URL=${{ secrets.DATABASE_URL }}
+            export MYSQL_SERVER_URL=${{ secrets.MYSQL_SERVER_URL }}
             export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
             export MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
             docker compose down
