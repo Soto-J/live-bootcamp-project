@@ -66,6 +66,9 @@ jobs:
         run: |
           export JWT_SECRET=secret
           export DATABASE_URL="mysql://john:${{ secrets.MYSQL_PASSWORD }}@localhost:3306/mysql"
+          export MYSQL_SERVER_URL="mysql://john:${{ secrets.MYSQL_PASSWORD }}@localhost:3306"
+          export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+          export MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
           export REDIS_HOST_NAME=localhost
           cargo build --verbose
           cargo test --verbose
