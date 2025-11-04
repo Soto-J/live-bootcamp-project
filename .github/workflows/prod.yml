@@ -84,16 +84,23 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push Docker images
-        uses: docker/bake-action@v5
-        # uses: docker/bake-action@v2.3.0
+      - name: Build and push app-service image
+        uses: docker/build-push-action@v5
         with:
+          context: ./app-service
           push: true
-          files: |
-            compose.yml
-          set: |
-            *.cache-from=type=gha
-            *.cache-to=type=gha,mode=max
+          tags: ${{ secrets.DOCKER_USERNAME }}/app-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build and push auth-service image
+        uses: docker/build-push-action@v5
+        with:
+          context: ./auth-service
+          push: true
+          tags: ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
   deploy:
     needs: build
