@@ -7,8 +7,6 @@
 .env.*
 !.env.example
 
-# SQLx offline mode cache (optional - some teams commit this)
-.sqlx/
 
 # IDE files
 .vscode/
