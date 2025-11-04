@@ -1,7 +1,7 @@
 use crate::helpers::{drop_mysql_database, get_random_email, TestApp};
 use auth_service::{
     api::helpers::get_random_password,
-    domain::{Email, data_stores::LoginAttemptId, error::ErrorResponse},
+    domain::{data_stores::LoginAttemptId, error::ErrorResponse, Email},
     routes::{
         login::{LoginRequest, LoginResponse, TwoFactorAuthResponse},
         signup::{SignupRequest, SignupResponse},

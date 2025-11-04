@@ -31,4 +31,3 @@ impl User {
         self.requires_2fa
     }
 }
-

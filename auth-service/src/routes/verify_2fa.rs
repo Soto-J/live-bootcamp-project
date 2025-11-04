@@ -59,6 +59,6 @@ pub async fn verify_2fa_handler(
     if two_fa_store.remove_code(&email).await.is_err() {
         return (updated_jar, Err(AuthAPIError::UnexpectedError));
     };
-    
+
     (updated_jar, Ok(StatusCode::OK.into_response()))
 }
