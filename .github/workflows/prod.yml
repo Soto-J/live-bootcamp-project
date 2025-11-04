@@ -17,11 +17,17 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_USER: john
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
-          MYSQL_DB: mysql
+          MYSQL_DATABASE: mysql
         ports:
           - 3306:3306
+        # options: >-
+        #   --health-cmd="mysqladmin ping -h localhost"
+        #   --health-interval=10s
+        #   --health-timeout=5s
+        #   --health-retries=3
       redis:
         image: redis:7.0-alpine
         ports:
@@ -57,7 +63,8 @@ jobs:
         working-directory: ./auth-service
         run: |
           export JWT_SECRET=secret
-          export DATABASE_URL=${{ secrets.DATABASE_URL }}@localhost:3306
+          export DATABASE_URL="mysql://john:${{ secrets.MYSQL_PASSWORD }}@localhost:3306/mysql"
+          export REDIS_HOST_NAME=localhost
           cargo build --verbose
           cargo test --verbose
 
@@ -117,7 +124,7 @@ jobs:
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
             export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
             export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
-            export MYSQL_ROOT_PASSWORD=${{secrets.MYSQL_ROOT_PASSWORD}}
+            export MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
             docker compose down
             docker compose pull
             docker compose up -d
