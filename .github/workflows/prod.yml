@@ -91,7 +91,6 @@ jobs:
           push: true
           files: |
             compose.yml
-            compose.override.yml
           set: |
             *.cache-from=type=gha
             *.cache-to=type=gha,mode=max
