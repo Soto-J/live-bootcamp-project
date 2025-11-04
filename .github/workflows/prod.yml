@@ -117,6 +117,7 @@ jobs:
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
             export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
             export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
+            export MYSQL_ROOT_PASSWORD=${{secrets.MYSQL_ROOT_PASSWORD}}
             docker compose down
             docker compose pull
             docker compose up -d
