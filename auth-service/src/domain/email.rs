@@ -20,7 +20,6 @@ impl AsRef<str> for Email {
     }
 }
 
-
 #[cfg(test)]
 mod test {
     use super::Email;

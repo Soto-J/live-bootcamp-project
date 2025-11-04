@@ -1,11 +1,13 @@
 use auth_service::{
     app_state::app_state::AppState,
-    configure_mysql, get_redis_client,
+    configure_mysql, configure_redis,
     services::{
-        data_stores::{HashmapTwoFACodeStore, HashsetBannedTokenStore, MySqlUserStore},
+        data_stores::{
+            HashsetBannedTokenStore, MySqlUserStore, RedisBannedTokenStore, RedisTwoFACodeStore,
+        },
         MockEmailClient,
     },
-    utils::constants::{prod, REDIS_HOST_NAME},
+    utils::constants::prod,
     Application,
 };
 
@@ -15,10 +17,13 @@ use tokio::sync::RwLock;
 #[tokio::main]
 async fn main() {
     let mysql_pool = configure_mysql().await;
+    let redis_connection = Arc::new(RwLock::new(configure_redis()));
 
     let user_store = Arc::new(RwLock::new(MySqlUserStore::new(mysql_pool)));
-    let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
-    let two_fa_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
+    let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(
+        redis_connection.clone(),
+    )));
+    let two_fa_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
     let email_client = Arc::new(RwLock::new(MockEmailClient));
 
     let app_state = AppState::new(user_store, banned_token_store, two_fa_store, email_client);
@@ -28,11 +33,4 @@ async fn main() {
         .expect("Failed to build app.");
 
     app.run().await.expect("Failed to run app.")
-}
-
-fn configure_redis() -> redis::Connection {
-    get_redis_client(REDIS_HOST_NAME.to_owned())
-        .expect("Failed to get Rediss client")
-        .get_connection()
-        .expect("Failed to get Redis connection")
 }

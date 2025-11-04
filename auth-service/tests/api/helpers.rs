@@ -1,8 +1,8 @@
 use auth_service::{
     app_state::app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType},
-    get_mysql_pool,
+    configure_redis, get_mysql_pool,
     services::{
-        data_stores::{HashmapTwoFACodeStore, HashsetBannedTokenStore, MySqlUserStore},
+        data_stores::{MySqlUserStore, RedisBannedTokenStore, RedisTwoFACodeStore},
         MockEmailClient,
     },
     utils::constants::{test, MYSQL_SERVER_URL},
@@ -32,10 +32,14 @@ pub struct TestApp {
 impl TestApp {
     pub async fn new() -> Self {
         let (mysql_pool, db_name) = configure_mysql().await;
+        let redis_connection = Arc::new(RwLock::new(configure_redis()));
 
         let user_store = Arc::new(RwLock::new(MySqlUserStore::new(mysql_pool)));
-        let banned_token_store = Arc::new(RwLock::new(HashsetBannedTokenStore::default()));
-        let two_fa_code_store = Arc::new(RwLock::new(HashmapTwoFACodeStore::default()));
+
+        let banned_token_store = Arc::new(RwLock::new(RedisBannedTokenStore::new(
+            redis_connection.clone(),
+        )));
+        let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
         let email_client = Arc::new(RwLock::new(MockEmailClient));
 
         let app_state = AppState::new(

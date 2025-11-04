@@ -1,9 +1,6 @@
-use crate::{
-    domain::{
-        data_stores::{BannedTokenStore, TwoFACodeStore, UserStore},
-        EmailClient,
-    },
-    services::data_stores::MySqlUserStore,
+use crate::domain::{
+    data_stores::{BannedTokenStore, TwoFACodeStore, UserStore},
+    EmailClient,
 };
 
 use std::sync::Arc;

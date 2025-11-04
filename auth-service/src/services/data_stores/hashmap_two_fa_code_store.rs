@@ -44,7 +44,7 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    
+
     use crate::api::helpers::get_random_email;
 
     #[tokio::test]

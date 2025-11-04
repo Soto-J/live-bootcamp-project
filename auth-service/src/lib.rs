@@ -4,7 +4,7 @@ use crate::{
         login::login_handler, logout::logout_handler, signup::signup_handler,
         verify_2fa::verify_2fa_handler, verify_token::verify_token_handler,
     },
-    utils::constants::DATABASE_URL,
+    utils::constants::{DATABASE_URL, REDIS_HOST_NAME},
 };
 
 use axum::{routing::post, serve::Serve, Router};
@@ -82,6 +82,13 @@ pub async fn get_mysql_pool(url: &str) -> Result<MySqlPool, sqlx::Error> {
         .max_connections(5)
         .connect(url)
         .await
+}
+
+pub fn configure_redis() -> redis::Connection {
+    get_redis_client(REDIS_HOST_NAME.to_owned())
+        .expect("Failed to get Rediss client")
+        .get_connection()
+        .expect("Failed to get Redis connection")
 }
 
 pub fn get_redis_client(redis_hostname: String) -> RedisResult<Client> {
