@@ -5,11 +5,27 @@ on:
   push:
     branches:
       - main
-  workflow_dispatch:
+
+env:
+  SQLX_OFFLINE: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_USER: john
+          MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
+          MYSQL_DB: mysql
+        ports:
+          - 3306:3306
+      redis:
+        image: redis:7.0-alpine
+        ports:
+          - 6379:6379
 
     steps:
       # Checkout code from the repository
@@ -41,7 +57,7 @@ jobs:
         working-directory: ./auth-service
         run: |
           export JWT_SECRET=secret
-          export SQLX_OFFLINE=true
+          export DATABASE_URL=${{ secrets.DATABASE_URL }}@localhost:5432
           cargo build --verbose
           cargo test --verbose
 
@@ -100,6 +116,7 @@ jobs:
             cd ~
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
             export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
+            export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
             docker compose down
             docker compose pull
             docker compose up -d
