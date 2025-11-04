@@ -17,8 +17,10 @@ jobs:
       mysql:
         image: mysql:8.0
         env:
-          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_USER: john
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MYSQL_SERVER_URL: ${{ secrets.MYSQL_SERVER_URL }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.MYSQL_ROOT_PASSWORD }}
           MYSQL_PASSWORD: ${{ secrets.MYSQL_PASSWORD }}
           MYSQL_DATABASE: mysql
         ports:
