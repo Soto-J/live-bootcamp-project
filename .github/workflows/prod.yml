@@ -139,5 +139,7 @@ jobs:
             export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
             export MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
             docker compose down
+            docker stop mysql-db 2>/dev/null || true
+            docker rm mysql-db 2>/dev/null || true
             docker compose pull
             docker compose up -d
