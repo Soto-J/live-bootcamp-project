@@ -57,7 +57,7 @@ jobs:
         working-directory: ./auth-service
         run: |
           export JWT_SECRET=secret
-          export DATABASE_URL=${{ secrets.DATABASE_URL }}@localhost:5432
+          export DATABASE_URL=${{ secrets.DATABASE_URL }}@localhost:3306
           cargo build --verbose
           cargo test --verbose
 
