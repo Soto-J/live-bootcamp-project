@@ -27,17 +27,17 @@ services:
     depends_on:
      - db
 
-  db: 
+  db:
     image: mysql:8.0
     container_name: mysql-db
     restart: always
     environment:
-      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-      MYSQL_DATABASE: rust_auth_service
       MYSQL_USER: john
+      MYSQL_DATABASE: rust auth service
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-    ports: 
-        - "3306:3306"
+    ports:
+        - "3307:3306"
     volumes:
         - db:/var/lib/mysql
   

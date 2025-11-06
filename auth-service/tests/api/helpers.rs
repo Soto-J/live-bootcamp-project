@@ -27,6 +27,7 @@ pub struct TestApp {
     pub two_fa_code_store: TwoFACodeStoreType,
     pub banned_token_store: BannedTokenStoreType,
     pub db_name: String,
+    pub cleaned_up_called: bool,
 }
 
 impl TestApp {
@@ -73,6 +74,7 @@ impl TestApp {
             banned_token_store,
             two_fa_code_store,
             db_name,
+            cleaned_up_called: false,
         }
     }
 
@@ -138,6 +140,24 @@ impl TestApp {
             .send()
             .await
             .expect("Failed to execute request.")
+    }
+
+    pub async fn clean_up(&mut self) {
+        if self.cleaned_up_called {
+            return;
+        }
+
+        drop_mysql_database(&self.db_name).await;
+
+        self.cleaned_up_called = true;
+    }
+}
+
+impl Drop for TestApp {
+    fn drop(&mut self) {
+        if !self.cleaned_up_called {
+            panic!("TestApp::clean_up was not called before dropping TestApp");
+        }
     }
 }
 

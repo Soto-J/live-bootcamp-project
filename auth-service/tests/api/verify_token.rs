@@ -1,10 +1,10 @@
-use crate::helpers::{drop_mysql_database, get_random_email, TestApp};
+use crate::helpers::{get_random_email, TestApp};
 
 use auth_service::{domain::error::ErrorResponse, utils::constants::JWT_COOKIE_NAME};
 
 #[tokio::test]
 async fn should_return_200_valid_token() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -44,12 +44,12 @@ async fn should_return_200_valid_token() {
 
     assert_eq!(response.status().as_u16(), 200);
 
-    drop_mysql_database(&app.db_name).await
+    app.clean_up().await
 }
 
 #[tokio::test]
 async fn should_return_401_if_invalid_token() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let token = serde_json::json!({
         "token": "invalidToken"
@@ -59,12 +59,12 @@ async fn should_return_401_if_invalid_token() {
 
     assert_eq!(response.status().as_u16(), 401);
 
-    drop_mysql_database(&app.db_name).await
+    app.clean_up().await
 }
 
 #[tokio::test]
 async fn should_return_401_if_banned_token() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -119,12 +119,12 @@ async fn should_return_401_if_banned_token() {
         "Invalid auth token".to_owned()
     );
 
-    drop_mysql_database(&app.db_name).await
+    app.clean_up().await
 }
 
 #[tokio::test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let token = serde_json::json!({});
 
@@ -132,5 +132,5 @@ async fn should_return_422_if_malformed_input() {
 
     assert_eq!(response.status().as_u16(), 422);
 
-    drop_mysql_database(&app.db_name).await
+    app.clean_up().await
 }

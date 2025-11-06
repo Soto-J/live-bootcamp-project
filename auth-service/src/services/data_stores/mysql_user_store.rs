@@ -24,20 +24,11 @@ impl MySqlUserStore {
 #[async_trait::async_trait]
 impl UserStore for MySqlUserStore {
     async fn add_user(&mut self, user: User) -> Result<(), UserStoreError> {
-        sqlx::query!(
-            "
-            SELECT 
-                email 
-            FROM 
-                users 
-            WHERE 
-                users.email = ?
-            ",
-            user.email().as_ref()
-        )
-        .fetch_optional(&self.pool)
-        .await
-        .map_err(|_| UserStoreError::UserAlreadyExists)?;
+        let user_exist = self.get_user(user.email()).await;
+
+        if user_exist.is_ok() {
+            return Err(UserStoreError::UserAlreadyExists);
+        }
 
         let password_hash = compute_password_hash(user.password().as_ref().to_string())
             .await
@@ -62,15 +53,15 @@ impl UserStore for MySqlUserStore {
     async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
         let record = sqlx::query!(
             r#"
-        SELECT 
-            email, 
-            password_hash, 
-            requires_2fa as "requires_2fa: bool"
-        FROM 
-            users
-        WHERE
-            email = ?
-        "#,
+            SELECT 
+                email, 
+                password_hash, 
+                requires_2fa as "requires_2fa: bool"
+            FROM 
+                users
+            WHERE
+                email = ?
+            "#,
             email.as_ref()
         )
         .fetch_one(&self.pool)

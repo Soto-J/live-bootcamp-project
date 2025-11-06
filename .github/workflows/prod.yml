@@ -25,11 +25,6 @@ jobs:
           MYSQL_DATABASE: mysql
         ports:
           - 3306:3306
-        options: >-
-          --health-cmd="mysqladmin ping -h localhost"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=3
       redis:
         image: redis:7.0-alpine
         ports:
@@ -134,40 +129,12 @@ jobs:
             cd ~
             export JWT_SECRET=${{ secrets.JWT_SECRET }}
             export AUTH_SERVICE_IP=${{ vars.DROPLET_IP }}
+            export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
             export DATABASE_URL=${{ secrets.DATABASE_URL }}
             export MYSQL_SERVER_URL=${{ secrets.MYSQL_SERVER_URL }}
-            export MYSQL_PASSWORD=${{ secrets.MYSQL_PASSWORD }}
             export MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
 
-            # Stop and disable system MySQL service to free port 3306 for Docker
-            sudo systemctl stop mysql 2>/dev/null || true
-            sudo systemctl stop mysqld 2>/dev/null || true
-            sudo systemctl disable mysql 2>/dev/null || true
-            sudo systemctl disable mysqld 2>/dev/null || true
-
-            # Stop all containers and services
-            docker compose down -v --remove-orphans 2>/dev/null || true
-
-            # Force stop and remove all Docker containers
-            docker ps -aq | xargs -r docker stop 2>/dev/null || true
-            docker ps -aq | xargs -r docker rm -f 2>/dev/null || true
-
-            # Kill any processes using the ports
-            sudo lsof -ti:3306 | xargs -r kill -9 2>/dev/null || true
-            sudo lsof -ti:6379 | xargs -r kill -9 2>/dev/null || true
-
-            # Alternative method using fuser
-            sudo fuser -k 3306/tcp 2>/dev/null || true
-            sudo fuser -k 6379/tcp 2>/dev/null || true
-
-            # Wait for ports to be released
-            sleep 5
-
-            # Verify ports are free (optional diagnostics)
-            echo "Checking if ports are free..."
-            sudo lsof -i:3306 || echo "Port 3306 is free"
-            sudo lsof -i:6379 || echo "Port 6379 is free"
-
             # Pull and start services
-            docker compose pull
-            docker compose up -d
+            docker-compose down
+            docker-compose pull
+            docker-compose up -d

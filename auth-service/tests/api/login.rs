@@ -1,4 +1,4 @@
-use crate::helpers::{drop_mysql_database, get_random_email, get_random_password, TestApp};
+use crate::helpers::{get_random_email, get_random_password, TestApp};
 
 use auth_service::{
     domain::{email::Email, error::ErrorResponse},
@@ -11,7 +11,7 @@ use auth_service::{
 
 #[tokio::test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -41,12 +41,12 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
 
     assert!(!auth_cookie.value().is_empty());
 
-    drop_mysql_database(&app.db_name).await
+    app.clean_up().await
 }
 
 #[tokio::test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = get_random_email();
     let password = get_random_password();
@@ -74,21 +74,23 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
     assert_eq!(json_body.message, "2FA required".to_owned());
 
-    let two_fa_code_store = app.two_fa_code_store.read().await;
+    let two_fa_code_store = app.two_fa_code_store.clone();
 
     let response = two_fa_code_store
+        .read()
+        .await
         .get_code(&Email::parse(email).unwrap())
         .await
         .unwrap();
 
     assert_eq!(json_body.login_attempt_id, response.0);
 
-    drop_mysql_database(&app.db_name).await
+    app.clean_up().await
 }
 
 #[tokio::test]
 pub async fn should_return_400_if_invalid_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = get_random_email();
     let password = get_random_password();
@@ -119,12 +121,12 @@ pub async fn should_return_400_if_invalid_credentials() {
         "Invalid credentials"
     );
 
-    drop_mysql_database(&app.db_name).await
+    app.clean_up().await
 }
 
 #[tokio::test]
 pub async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let email = get_random_email();
     let password = get_random_password();
@@ -153,12 +155,12 @@ pub async fn should_return_401_if_incorrect_credentials() {
         "Incorrect credentials"
     );
 
-    drop_mysql_database(&app.db_name).await
+    app.clean_up().await
 }
 
 #[tokio::test]
 async fn should_return_422_if_malformed_credentials() {
-    let app = TestApp::new().await;
+    let mut app = TestApp::new().await;
 
     let random_email = get_random_email();
 
@@ -193,5 +195,5 @@ async fn should_return_422_if_malformed_credentials() {
         );
     }
 
-    drop_mysql_database(&app.db_name).await
+    app.clean_up().await
 }

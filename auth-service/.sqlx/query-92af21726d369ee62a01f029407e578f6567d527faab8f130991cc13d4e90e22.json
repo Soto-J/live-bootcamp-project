@@ -1,6 +1,6 @@
 {
   "db_name": "MySQL",
-  "query": "\n        SELECT \n            email, \n            password_hash, \n            requires_2fa as \"requires_2fa: bool\"\n        FROM \n            users\n        WHERE\n            email = ?\n        ",
+  "query": "\n            SELECT \n                email, \n                password_hash, \n                requires_2fa as \"requires_2fa: bool\"\n            FROM \n                users\n            WHERE\n                email = ?\n            ",
   "describe": {
     "columns": [
       {
@@ -40,5 +40,5 @@
       false
     ]
   },
-  "hash": "91dbe40f47d44495ad8d5bb17cfecd2a27659f2c0e018da76bd70e656386b4a1"
+  "hash": "92af21726d369ee62a01f029407e578f6567d527faab8f130991cc13d4e90e22"
 }

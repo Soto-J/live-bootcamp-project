@@ -23,32 +23,33 @@ impl RedisBannedTokenStore {
 #[async_trait::async_trait]
 impl BannedTokenStore for RedisBannedTokenStore {
     async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
-        let seconds: u64 = TOKEN_TTL_SECONDS
+        let expired_in: u64 = TOKEN_TTL_SECONDS
             .try_into()
             .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
-        let key = get_key(&token);
 
-        let redis_connection = self.conn.clone();
+        let token_key = get_key(&token);
 
-        let redis_result = tokio::task::spawn_blocking(move || {
-            redis_connection.blocking_write().set_ex(key, true, seconds)
-        })
-        .await
-        .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
+        let _: () = self
+            .conn
+            .write()
+            .await
+            .set_ex(token_key, true, expired_in)
+            .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
 
-        redis_result.map_err(|_| BannedTokenStoreError::UnexpectedError)
+        Ok(())
     }
 
     async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
-        let key = get_key(token);
-        let redis_connection = self.conn.clone();
+        let token_key = get_key(token);
 
-        let redis_result =
-            tokio::task::spawn_blocking(move || redis_connection.blocking_write().exists(key))
-                .await
-                .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
+        let is_banned = self
+            .conn
+            .write()
+            .await
+            .exists(&token_key)
+            .map_err(|_| BannedTokenStoreError::UnexpectedError)?;
 
-        redis_result.map_err(|_| BannedTokenStoreError::UnexpectedError)
+        Ok(is_banned)
     }
 }
 

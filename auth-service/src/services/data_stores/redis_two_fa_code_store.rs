@@ -33,65 +33,61 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
         login_attempt_id: LoginAttemptId,
         code: TwoFACode,
     ) -> Result<(), TwoFACodeStoreError> {
-        let key = get_key(&email);
+        let token_key = get_key(&email);
 
-        let two_fa_tuple = TwoFATuple(
+        let data = TwoFATuple(
             login_attempt_id.as_ref().to_owned(),
             code.as_ref().to_owned(),
         );
+        let serialized_data =
+            serde_json::to_string(&data).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-        let value = serde_json::to_string(&two_fa_tuple)
+        let _: () = self
+            .conn
+            .write()
+            .await
+            .set_ex(&token_key, serialized_data, TEN_MINUTES_IN_SECONDS)
             .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-        let redis_connection = self.conn.clone();
-
-        let redis_result = tokio::task::spawn_blocking(move || {
-            redis_connection
-                .blocking_write()
-                .set_ex(key, value, TEN_MINUTES_IN_SECONDS)
-        })
-        .await
-        .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
-
-        redis_result.map_err(|_| TwoFACodeStoreError::UnexpectedError)
+        Ok(())
     }
 
     async fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError> {
         let key = get_key(email);
 
-        let redis_connection = self.conn.clone();
+        let _: () = self
+            .conn
+            .write()
+            .await
+            .del(&key)
+            .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-        let redis_result =
-            tokio::task::spawn_blocking(move || redis_connection.blocking_write().del(key))
-                .await
-                .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
-
-        redis_result.map_err(|_| TwoFACodeStoreError::UnexpectedError)
+        Ok(())
     }
 
     async fn get_code(
         &self,
         email: &Email,
     ) -> Result<(LoginAttemptId, TwoFACode), TwoFACodeStoreError> {
-        let key = get_key(email);
-        let redis_connection = self.conn.clone();
+        let token_key = get_key(email);
 
-        let redis_result: String =
-            tokio::task::spawn_blocking(move || redis_connection.blocking_write().get(key))
-                .await
-                .map_err(|_| TwoFACodeStoreError::LoginAttemptIdNotFound)?
-                .map_err(|_| TwoFACodeStoreError::LoginAttemptIdNotFound)?;
-
-        let two_fa_tuple: TwoFATuple = serde_json::from_str(&redis_result)
+        let token = self
+            .conn
+            .write()
+            .await
+            .get::<_, String>(&token_key)
             .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-        let login_attempt_id = LoginAttemptId::parse(two_fa_tuple.0)
-            .map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        let data: TwoFATuple =
+            serde_json::from_str(&token).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-        let two_fa_code =
-            TwoFACode::parse(two_fa_tuple.1).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+        let login_attempt_id =
+            LoginAttemptId::parse(data.0).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 
-        Ok((login_attempt_id, two_fa_code))
+        let email_code =
+            TwoFACode::parse(data.1).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
+
+        Ok((login_attempt_id, email_code))
     }
 }
 
