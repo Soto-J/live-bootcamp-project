@@ -34,6 +34,7 @@ pub enum LoginResponse {
     TwoFactorAuth(TwoFactorAuthResponse),
 }
 
+#[tracing::instrument(name = "Login", skip_all)]
 pub async fn login_handler(
     State(state): State<AppState>,
     cookie_jar: CookieJar,

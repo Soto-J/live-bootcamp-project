@@ -145,7 +145,9 @@ async fn compute_password_hash(password: String) -> Result<String, Box<dyn Error
             )
             .hash_password(password.as_bytes(), &salt)?
             .to_string();
-            Ok(password_hash)
+
+            Ok(password_hash) // Updated!
+            // Err(Box::new(std::io::Error::other("oh no!")) as Box<dyn Error + Send + Sync>)
         })
     })
     .await;

@@ -32,7 +32,7 @@ dotenvy = "0.15.7"
 lazy_static = "1.4.0"
 argon2 = { version = "0.5.3", features = ["std"] }
 tracing = "0.1.40"
-tracing-subscriber = { version = "0.3.1", features = ["env-filter", "ansi"] }
+tracing-subscriber = "0.3.18"
 
 
 [dev-dependencies]

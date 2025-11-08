@@ -6,8 +6,7 @@ use tracing::{Level, Span};
 
 pub fn init_tracing() {
     tracing_subscriber::fmt()
-        .pretty()
-        .with_ansi(true)
+        .compact()
         .with_max_level(tracing::Level::DEBUG)
         .init();
 }
