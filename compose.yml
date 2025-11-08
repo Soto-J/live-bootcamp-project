@@ -32,9 +32,9 @@ services:
     container_name: mysql-db
     restart: always
     environment:
-      MYSQL_USER: john
-      MYSQL_DATABASE: rust auth service
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: rust_auth_service
+      MYSQL_USER: john
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
         - "3307:3306"

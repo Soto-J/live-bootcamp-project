@@ -1,9 +1,10 @@
 use crate::helpers::{get_random_email, TestApp};
 
 use auth_service::{domain::error::ErrorResponse, utils::constants::JWT_COOKIE_NAME};
+use auth_service_macros::api_test;
 use reqwest::Url;
 
-#[tokio::test]
+#[api_test]
 async fn should_return_200_if_valid_jwt_cookie() {
     let mut app = TestApp::new().await;
 
@@ -62,7 +63,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 async fn should_return_400_if_jwt_cookie_missing() {
     let mut app = TestApp::new().await;
 
@@ -92,7 +93,7 @@ async fn should_return_400_if_jwt_cookie_missing() {
     app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 async fn should_return_400_if_logout_called_twice_in_a_row() {
     let mut app = TestApp::new().await;
 
@@ -149,7 +150,7 @@ async fn should_return_400_if_logout_called_twice_in_a_row() {
     app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 async fn should_return_401_if_invalid_token() {
     let mut app = TestApp::new().await;
 
