@@ -13,8 +13,6 @@ use auth_service_macros::api_test;
 
 #[api_test]
 async fn should_return_200_if_correct_code() {
-    let app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_email();
 
@@ -82,8 +80,6 @@ async fn should_return_200_if_correct_code() {
 
 #[api_test]
 async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
-
     let test_cases = [serde_json::json!(Verify2FARequest {
         email: "fakeemail".into(),
         login_attempt_id: "fakeID".into(),
@@ -107,8 +103,6 @@ async fn should_return_400_if_invalid_input() {
 
 #[api_test]
 async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_email();
 
@@ -179,8 +173,6 @@ async fn should_return_401_if_incorrect_credentials() {
 
 #[api_test]
 async fn should_return_401_if_old_code() {
-    let app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -267,8 +259,6 @@ async fn should_return_401_if_old_code() {
 
 #[api_test]
 async fn should_return_401_if_same_code_twice() {
-    let app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -342,8 +332,6 @@ async fn should_return_401_if_same_code_twice() {
 
 #[api_test]
 pub async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
-
     let body = serde_json::json!({});
 
     let response = app.post_verify_2fa(&body).await;

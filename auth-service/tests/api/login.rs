@@ -12,8 +12,6 @@ use auth_service_macros::api_test;
 
 #[api_test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
@@ -45,8 +43,6 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
 
 #[api_test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
-    let app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -87,8 +83,6 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
 
 #[api_test]
 pub async fn should_return_400_if_invalid_credentials() {
-    let app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -121,8 +115,6 @@ pub async fn should_return_400_if_invalid_credentials() {
 
 #[api_test]
 pub async fn should_return_401_if_incorrect_credentials() {
-    let app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -153,8 +145,6 @@ pub async fn should_return_401_if_incorrect_credentials() {
 
 #[api_test]
 async fn should_return_422_if_malformed_credentials() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({

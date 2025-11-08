@@ -77,7 +77,7 @@ impl UserStore for MySqlUserStore {
         Ok(User::new(email, password, record.requires_2fa))
     }
 
-    #[tracing::instrument(name = "Validating user credentials in PostgreSQL", skip_all)]
+    #[tracing::instrument(name = "Validating user credentials in MySql", skip_all)]
     async fn validate_user(
         &self,
         email: &Email,

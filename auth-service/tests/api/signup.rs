@@ -8,8 +8,6 @@ use auth_service_macros::api_test;
 
 #[api_test]
 pub async fn should_return_201_if_valid_input() {
-    let app = TestApp::new().await;
-
     let test_case = serde_json::json!({
         "email": get_random_email(),
         "password": "password123",
@@ -34,8 +32,6 @@ pub async fn should_return_201_if_valid_input() {
 
 #[api_test]
 pub async fn should_return_400_if_invalid_input() {
-    let app = TestApp::new().await;
-
     let test_cases = [
         serde_json::json!(SignupRequest {
             email: "randomemail.com".into(),
@@ -76,8 +72,6 @@ pub async fn should_return_400_if_invalid_input() {
 
 #[api_test]
 pub async fn should_return_409_if_email_already_exists() {
-    let app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -100,9 +94,4 @@ pub async fn should_return_409_if_email_already_exists() {
             .error,
         "User already exists"
     );
-}
-
-#[api_test]
-async fn should_return_500_unexpected_error() {
-    let app = TestApp::new().await;
 }

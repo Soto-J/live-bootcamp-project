@@ -5,8 +5,6 @@ use auth_service_macros::api_test;
 
 #[api_test]
 async fn should_return_200_valid_token() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
@@ -48,8 +46,6 @@ async fn should_return_200_valid_token() {
 
 #[api_test]
 async fn should_return_401_if_invalid_token() {
-    let app = TestApp::new().await;
-
     let token = serde_json::json!({
         "token": "invalidToken"
     });
@@ -61,8 +57,6 @@ async fn should_return_401_if_invalid_token() {
 
 #[api_test]
 async fn should_return_401_if_banned_token() {
-    let app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
@@ -119,8 +113,6 @@ async fn should_return_401_if_banned_token() {
 
 #[api_test]
 async fn should_return_422_if_malformed_input() {
-    let app = TestApp::new().await;
-
     let token = serde_json::json!({});
 
     let response = app.post_verify_token(&token).await;
