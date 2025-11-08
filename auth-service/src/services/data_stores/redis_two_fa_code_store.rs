@@ -39,6 +39,7 @@ impl TwoFACodeStore for RedisTwoFACodeStore {
             login_attempt_id.as_ref().to_owned(),
             code.as_ref().to_owned(),
         );
+
         let serialized_data =
             serde_json::to_string(&data).map_err(|_| TwoFACodeStoreError::UnexpectedError)?;
 

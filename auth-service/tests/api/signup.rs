@@ -4,11 +4,10 @@ use auth_service::{
     domain::error::ErrorResponse,
     routes::signup::{SignupRequest, SignupResponse},
 };
+use auth_service_macros::api_test;
 
-#[tokio::test]
+#[api_test]
 pub async fn should_return_201_if_valid_input() {
-    let mut app = TestApp::new().await;
-
     let test_case = serde_json::json!({
         "email": get_random_email(),
         "password": "password123",
@@ -29,14 +28,10 @@ pub async fn should_return_201_if_valid_input() {
             .expect("Could not deserialize response body to UserBody"),
         expected_response
     );
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 pub async fn should_return_400_if_invalid_input() {
-    let mut app = TestApp::new().await;
-
     let test_cases = [
         serde_json::json!(SignupRequest {
             email: "randomemail.com".into(),
@@ -73,14 +68,10 @@ pub async fn should_return_400_if_invalid_input() {
             "Invalid credentials"
         );
     }
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 pub async fn should_return_409_if_email_already_exists() {
-    let mut app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -103,12 +94,4 @@ pub async fn should_return_409_if_email_already_exists() {
             .error,
         "User already exists"
     );
-
-    app.clean_up().await
-}
-
-#[tokio::test]
-async fn should_return_500_unexpected_error() {
-    let mut app = TestApp::new().await;
-    app.clean_up().await
 }

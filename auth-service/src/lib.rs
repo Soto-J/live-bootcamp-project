@@ -4,15 +4,18 @@ use crate::{
         login::login_handler, logout::logout_handler, signup::signup_handler,
         verify_2fa::verify_2fa_handler, verify_token::verify_token_handler,
     },
-    utils::constants::{DATABASE_URL, REDIS_HOST_NAME},
+    utils::{
+        constants::{DATABASE_URL, REDIS_HOST_NAME},
+        tracing::{make_span_with_request_id, on_request, on_response},
+    },
 };
 
 use axum::{routing::post, serve::Serve, Router};
 use redis::{Client, RedisResult};
 use reqwest::Method;
 use sqlx::{mysql::MySqlPoolOptions, MySqlPool};
-use std::error::Error;
-use tower_http::{cors::CorsLayer, services::ServeDir};
+use std::{error::Error, io};
+use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
 
 pub mod api;
 pub mod app_state;
@@ -46,7 +49,13 @@ impl Application {
             .route("/verify-2fa", post(verify_2fa_handler))
             .route("/verify-token", post(verify_token_handler))
             .with_state(app_state)
-            .layer(cors);
+            .layer(cors)
+            .layer(
+                TraceLayer::new_for_http()
+                    .make_span_with(make_span_with_request_id)
+                    .on_request(on_request)
+                    .on_response(on_response),
+            );
 
         let listener = tokio::net::TcpListener::bind(address).await?;
 
@@ -56,8 +65,8 @@ impl Application {
         Ok(Application { server, address })
     }
 
-    pub async fn run(self) -> Result<(), std::io::Error> {
-        println!("Listening on {}...", &self.address);
+    pub async fn run(self) -> Result<(), io::Error> {
+        tracing::info!("Listening on {}...", &self.address);
         self.server.await
     }
 }

@@ -8,11 +8,10 @@ use auth_service::{
     },
     utils::constants::JWT_COOKIE_NAME,
 };
+use auth_service_macros::api_test;
 
-#[tokio::test]
+#[api_test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let mut app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
@@ -40,14 +39,10 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
         .expect("No auth cookie found");
 
     assert!(!auth_cookie.value().is_empty());
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
-    let mut app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -84,14 +79,10 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         .unwrap();
 
     assert_eq!(json_body.login_attempt_id, response.0);
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 pub async fn should_return_400_if_invalid_credentials() {
-    let mut app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -120,14 +111,10 @@ pub async fn should_return_400_if_invalid_credentials() {
             .error,
         "Invalid credentials"
     );
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 pub async fn should_return_401_if_incorrect_credentials() {
-    let mut app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -154,14 +141,10 @@ pub async fn should_return_401_if_incorrect_credentials() {
             .error,
         "Incorrect credentials"
     );
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 async fn should_return_422_if_malformed_credentials() {
-    let mut app = TestApp::new().await;
-
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
@@ -194,6 +177,4 @@ async fn should_return_422_if_malformed_credentials() {
             test_case
         );
     }
-
-    app.clean_up().await
 }

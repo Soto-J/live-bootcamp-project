@@ -9,11 +9,10 @@ use auth_service::{
     },
     utils::constants::JWT_COOKIE_NAME,
 };
+use auth_service_macros::api_test;
 
-#[tokio::test]
+#[api_test]
 async fn should_return_200_if_correct_code() {
-    let mut app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_email();
 
@@ -77,14 +76,10 @@ async fn should_return_200_if_correct_code() {
         .any(|cookie| cookie.name() == JWT_COOKIE_NAME));
 
     assert_eq!(response.status().as_u16(), 200);
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 async fn should_return_400_if_invalid_input() {
-    let mut app = TestApp::new().await;
-
     let test_cases = [serde_json::json!(Verify2FARequest {
         email: "fakeemail".into(),
         login_attempt_id: "fakeID".into(),
@@ -104,14 +99,10 @@ async fn should_return_400_if_invalid_input() {
             "Invalid credentials".to_owned()
         )
     }
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 async fn should_return_401_if_incorrect_credentials() {
-    let mut app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_email();
 
@@ -178,14 +169,10 @@ async fn should_return_401_if_incorrect_credentials() {
             .error,
         "Incorrect credentials".to_owned()
     );
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 async fn should_return_401_if_old_code() {
-    let mut app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -268,14 +255,10 @@ async fn should_return_401_if_old_code() {
             .error,
         "Incorrect credentials".to_owned()
     );
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 async fn should_return_401_if_same_code_twice() {
-    let mut app = TestApp::new().await;
-
     let email = get_random_email();
     let password = get_random_password();
 
@@ -345,19 +328,13 @@ async fn should_return_401_if_same_code_twice() {
         .await;
 
     assert_eq!(second_verify_2fa_resposne.status().as_u16(), 401);
-
-    app.clean_up().await
 }
 
-#[tokio::test]
+#[api_test]
 pub async fn should_return_422_if_malformed_input() {
-    let mut app = TestApp::new().await;
-
     let body = serde_json::json!({});
 
     let response = app.post_verify_2fa(&body).await;
 
     assert_eq!(response.status().as_u16(), 422);
-
-    app.clean_up().await
 }
