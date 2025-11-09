@@ -2,7 +2,7 @@
 FROM rust:1.85-alpine AS chef
 USER root
 # Add cargo-chef to cache dependencies
-RUN apk add --no-cache musl-dev & cargo install cargo-chef
+RUN apk add --no-cache musl-dev && cargo install cargo-chef
 WORKDIR /app
 
 FROM chef AS planner
@@ -14,9 +14,10 @@ FROM chef AS builder
 COPY --from=planner /app/recipe.json recipe.json
 # Build dependencies - this is the caching Docker layer!
 RUN cargo chef cook --release --recipe-path recipe.json
+
 # Build application
-COPY . .
-ENV SQLX_OFFLINE true
+COPY ./auth-service ./auth-service-macros ./
+ENV SQLX_OFFLINE=true
 RUN cargo build --release --bin auth-service
 
 # We do not need the Rust toolchain to run the binary!
@@ -27,4 +28,3 @@ COPY --from=builder /app/target/release/auth-service /usr/local/bin
 COPY --from=builder /app/assets /app/assets
 ENV REDIS_HOST_NAME=redis
 ENTRYPOINT ["/usr/local/bin/auth-service"]
-

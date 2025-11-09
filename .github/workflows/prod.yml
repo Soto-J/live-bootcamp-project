@@ -91,7 +91,9 @@ jobs:
       - name: Build and push auth-service image
         uses: docker/build-push-action@v5
         with:
-          context: ./auth-service
+          # context: ./auth-service
+          context: .
+          file: ./auth-service/Dockerfile
           push: true
           tags: ${{ secrets.DOCKER_USERNAME }}/auth-service:latest
           cache-from: type=gha
