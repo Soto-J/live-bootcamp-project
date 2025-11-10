@@ -1,5 +1,2 @@
 [workspace]
-members = [
-    "auth-service",
-    "auth-service-macros"
-]
+members = ["app-service", "auth-service", "auth-service-macros"]
