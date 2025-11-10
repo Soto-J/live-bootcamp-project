@@ -10,7 +10,7 @@ pub struct ErrorResponse {
     pub error: String,
 }
 
-#[derive(PartialEq, Debug)]
+#[derive(Debug, PartialEq)]
 pub enum AuthAPIError {
     UserAlreadyExists,
     InvalidCredentials,
@@ -23,6 +23,8 @@ pub enum AuthAPIError {
 
 impl IntoResponse for AuthAPIError {
     fn into_response(self) -> Response {
+        log_error_chain(&self);
+
         let (status, error_message) = match self {
             AuthAPIError::UserAlreadyExists => (StatusCode::CONFLICT, "User already exists"),
             AuthAPIError::InvalidCredentials => (StatusCode::BAD_REQUEST, "Invalid credentials"),
@@ -43,4 +45,30 @@ impl IntoResponse for AuthAPIError {
 
         (status, body).into_response()
     }
+}
+
+impl std::fmt::Display for AuthAPIError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl std::error::Error for AuthAPIError {}
+
+fn log_error_chain(e: &(dyn std::error::Error + 'static)) {
+    let separator =
+        "\n-----------------------------------------------------------------------------------\n";
+    
+    let mut report = format!("{}{:?}\n", separator, e);
+    let mut current = e.source();
+
+    while let Some(cause) = current {
+        let str = format!("Caused by:\n\n{:?}", cause);
+        report = format!("{}\n{}", report, str);
+        current = cause.source();
+    }
+
+    report = format!("{}\n{}", report, separator);
+    
+    tracing::error!("{}", report);
 }

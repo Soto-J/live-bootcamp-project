@@ -1,9 +1,12 @@
 use auth_service::{
-    Application, app_state::app_state::AppState, configure_mysql, configure_redis, services::{
-        MockEmailClient, data_stores::{
-            HashsetBannedTokenStore, MySqlUserStore, RedisBannedTokenStore, RedisTwoFACodeStore,
-        }
-    }, utils::{constants::prod, tracing::init_tracing}
+    app_state::app_state::AppState,
+    configure_mysql, configure_redis,
+    services::{
+        data_stores::{MySqlUserStore, RedisBannedTokenStore, RedisTwoFACodeStore},
+        MockEmailClient,
+    },
+    utils::{constants::prod, tracing::init_tracing},
+    Application,
 };
 
 use std::sync::Arc;
@@ -11,8 +14,9 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
-    init_tracing();
-    
+    color_eyre::install().expect("Failed to install color_eyre");
+    init_tracing().expect("Failed to initialize tracing");
+
     let mysql_pool = configure_mysql().await;
     let redis_connection = Arc::new(RwLock::new(configure_redis()));
 

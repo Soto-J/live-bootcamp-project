@@ -47,5 +47,11 @@ docker compose up
 ```bash
 docker pull mysql:8.0
 docker run --name mysql-db -e MYSQL_ROOT_PASSWORD=[MYSQL_ROOT_PASSWORD] -p 3306:3306 -d mysql:8.0
+
+
+
 ```
 visit http://localhost:8000 and http://localhost:3000
+
+
+

@@ -66,7 +66,7 @@ impl Application {
     }
 
     pub async fn run(self) -> Result<(), io::Error> {
-        tracing::info!("Listening on {}...", &self.address);
+        tracing::info!("Listening on {}", &self.address);
         self.server.await
     }
 }

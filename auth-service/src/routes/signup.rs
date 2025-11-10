@@ -1,8 +1,6 @@
 use crate::{
     app_state::app_state::AppState,
-    domain::{
-        data_stores::UserStore, email::Email, error::AuthAPIError, password::Password, user::User,
-    },
+    domain::{email::Email, error::AuthAPIError, password::Password, user::User},
 };
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
@@ -22,9 +20,8 @@ pub struct SignupResponse {
     pub message: String,
 }
 
-// naming the span “Signup”, skipping all arguments from being recorded in the trace, 
-// and capturing errors with Debug formatting if they occur. 
-#[tracing::instrument(name = "Signup", skip_all, err(Debug))]
+// skipping all arguments from being recorded in the trace
+#[tracing::instrument(name = "Signup", skip_all)]
 pub async fn signup_handler(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,

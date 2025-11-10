@@ -1,7 +1,7 @@
 use crate::{
     app_state::app_state::AppState,
     domain::{
-        data_stores::{LoginAttemptId, TwoFACode, UserStore},
+        data_stores::{LoginAttemptId, TwoFACode},
         email::Email,
         error::AuthAPIError,
         password::Password,
@@ -34,6 +34,7 @@ pub enum LoginResponse {
     TwoFactorAuth(TwoFactorAuthResponse),
 }
 
+#[tracing::instrument(name = "Login", skip_all)]
 pub async fn login_handler(
     State(state): State<AppState>,
     cookie_jar: CookieJar,

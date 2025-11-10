@@ -1,0 +1,16 @@
+target/
+**/target/
+
+.git/
+.gitignore
+
+*.log
+
+# Docker
+Dockerfile
+compose.yml
+
+# Env
+*.env
+.env
+.env.*
