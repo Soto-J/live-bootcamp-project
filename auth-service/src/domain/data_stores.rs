@@ -1,5 +1,6 @@
 use crate::domain::{email::Email, password::Password, user::User};
 
+use color_eyre::eyre::{self, eyre, Context, Ok};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -22,11 +23,10 @@ pub trait UserStore: Send + Sync {
 }
 
 // ~~~ Banned token store
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, thiserror::Error)]
 pub enum BannedTokenStoreError {
-    TokenNotFound,
-    FailedToStoreToken,
-    UnexpectedError,
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] eyre::Report),
 }
 
 #[async_trait::async_trait]
@@ -38,6 +38,14 @@ pub trait BannedTokenStore: Send + Sync {
 // ~~~ 2FA Store
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct LoginAttemptId(String);
+
+impl LoginAttemptId {
+    pub fn parse(id: String) -> eyre::Result<Self> {
+        let parse_id = uuid::Uuid::parse_str(&id).wrap_err("Invalid login attempt id")?;
+
+        Ok(Self(parse_id.to_string()))
+    }
+}
 
 impl AsRef<str> for LoginAttemptId {
     fn as_ref(&self) -> &str {
@@ -63,22 +71,23 @@ impl From<LoginAttemptId> for String {
     }
 }
 
-impl LoginAttemptId {
-    pub fn parse(id: String) -> Result<Self, String> {
-        match Uuid::parse_str(&id) {
-            Ok(id) => Ok(Self(id.to_string())),
-            _ => Err(format!("Invalid UUID: {}", id)),
-        }
+#[derive(Debug, thiserror::Error)]
+pub enum TwoFACodeStoreError {
+    #[error("Login Attempt ID not found")]
+    LoginAttemptIdNotFound,
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] eyre::Report),
+}
+impl PartialEq for TwoFACodeStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        matches!(
+            (self, other),
+            (Self::LoginAttemptIdNotFound, Self::LoginAttemptIdNotFound)
+                | (Self::UnexpectedError(_), Self::UnexpectedError(_))
+        )
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
-pub enum TwoFACodeStoreError {
-    LoginAttemptIdNotFound,
-    UnexpectedError,
-}
-
-// This trait represents the interface all concrete 2FA code stores should implement
 #[async_trait::async_trait]
 pub trait TwoFACodeStore {
     async fn add_code(
@@ -98,16 +107,14 @@ pub trait TwoFACodeStore {
 pub struct TwoFACode(String);
 
 impl TwoFACode {
-    pub fn parse(code: String) -> Result<Self, String> {
-        if code.chars().all(|ch| !ch.is_ascii_digit()) {
-            return Err(format!("Code must be numeric {}", code));
-        }
+    pub fn parse(code: String) -> eyre::Result<Self> {
+        let code_as_u32 = code.parse::<u32>().wrap_err("Invalid 2FA code")?;
 
-        if code.len() < 6 {
-            return Err(format!("Code must be numeric {}", code));
+        if (100_000..=999_999).contains(&code_as_u32) {
+            Ok(Self(code))
+        } else {
+            Err(eyre!("Invalid 2Fa code"))
         }
-
-        Ok(Self(code))
     }
 }
 

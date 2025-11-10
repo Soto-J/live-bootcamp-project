@@ -1,15 +1,35 @@
-use crate::{app_state::app_state::BannedTokenStoreType, domain::email::Email};
-
 use super::constants::{JWT_COOKIE_NAME, JWT_SECRET, TOKEN_TTL_SECONDS};
+use crate::{app_state::app_state::BannedTokenStoreType, domain::email::Email};
 
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
+use color_eyre::eyre::{self, Context, ContextCompat, Result};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, thiserror::Error)]
+pub enum GenerateTokenError {
+    #[error("Token not found")]
+    TokenError(jsonwebtoken::errors::Error),
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] eyre::Report),
+}
+impl PartialEq for GenerateTokenError {
+    fn eq(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::TokenError(l0), Self::TokenError(r0)) => l0 == r0,
+            (Self::UnexpectedError(l0), Self::UnexpectedError(r0)) => l0 == r0,
+            _ => false,
+        }
+    }
+}
+
 // Create cookie with a new JWT auth token
-pub fn generate_auth_cookie(email: &Email) -> Result<Cookie<'static>, GenerateTokenError> {
-    let token = generate_auth_token(email)?;
+pub fn generate_auth_cookie(email: &Email) -> eyre::Result<Cookie<'static>> {
+    let token = generate_auth_token(email)
+        .wrap_err("Failed to create auth cookie")
+        .map_err(GenerateTokenError::UnexpectedError)?;
+
     Ok(create_auth_cookie(token))
 }
 
@@ -24,14 +44,8 @@ fn create_auth_cookie(token: String) -> Cookie<'static> {
     cookie
 }
 
-#[derive(Debug)]
-pub enum GenerateTokenError {
-    TokenError(jsonwebtoken::errors::Error),
-    UnexpectedError,
-}
-
 // Create JWT auth token
-fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
+fn generate_auth_token(email: &Email) -> eyre::Result<String> {
     let delta = chrono::Duration::try_seconds(TOKEN_TTL_SECONDS)
         .ok_or(GenerateTokenError::UnexpectedError)?;
 
@@ -57,7 +71,7 @@ fn generate_auth_token(email: &Email) -> Result<String, GenerateTokenError> {
 pub async fn validate_token(
     token: &str,
     banned_token_store: BannedTokenStoreType,
-) -> Result<Claims, jsonwebtoken::errors::Error> {
+) -> eyre::Result<Claims> {
     match banned_token_store.read().await.contains_token(token).await {
         Ok(value) => {
             if value {
@@ -82,7 +96,7 @@ pub async fn validate_token(
 }
 
 // Create JWT auth token by encoding claims using the JWT secret
-fn create_token(claims: &Claims) -> Result<String, jsonwebtoken::errors::Error> {
+fn create_token(claims: &Claims) -> eyre::Result<String> {
     encode(
         &jsonwebtoken::Header::default(),
         &claims,

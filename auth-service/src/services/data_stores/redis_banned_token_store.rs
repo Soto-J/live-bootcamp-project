@@ -13,7 +13,6 @@ const BANNED_TOKEN_KEY_PREFIX: &str = "banned_token:";
 pub struct RedisBannedTokenStore {
     conn: Arc<RwLock<Connection>>,
 }
-
 impl RedisBannedTokenStore {
     pub fn new(conn: Arc<RwLock<Connection>>) -> Self {
         Self { conn }

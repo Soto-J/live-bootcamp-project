@@ -2,23 +2,33 @@ use axum::{
     response::{IntoResponse, Response},
     Json,
 };
+use color_eyre::eyre;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
+
+use crate::domain::data_stores::TwoFACodeStoreError;
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ErrorResponse {
     pub error: String,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, thiserror::Error)]
 pub enum AuthAPIError {
+    #[error("User already exists")]
     UserAlreadyExists,
+    #[error("")]
     InvalidCredentials,
+    #[error("")]
     IncorrectCredentials,
+    #[error("")]
     MissingToken,
+    #[error("")]
     InvalidToken,
+    #[error("")]
     Missing2FA,
-    UnexpectedError,
+    #[error("")]
+    UnexpectedError(#[source] eyre::Report),
 }
 
 impl IntoResponse for AuthAPIError {
@@ -34,7 +44,7 @@ impl IntoResponse for AuthAPIError {
             AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing auth token"),
             AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid auth token"),
             AuthAPIError::Missing2FA => (StatusCode::PARTIAL_CONTENT, "2FA Missing"),
-            AuthAPIError::UnexpectedError => {
+            AuthAPIError::UnexpectedError(e) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }
         };
@@ -58,7 +68,7 @@ impl std::error::Error for AuthAPIError {}
 fn log_error_chain(e: &(dyn std::error::Error + 'static)) {
     let separator =
         "\n-----------------------------------------------------------------------------------\n";
-    
+
     let mut report = format!("{}{:?}\n", separator, e);
     let mut current = e.source();
 
@@ -69,6 +79,6 @@ fn log_error_chain(e: &(dyn std::error::Error + 'static)) {
     }
 
     report = format!("{}\n{}", report, separator);
-    
+
     tracing::error!("{}", report);
 }
