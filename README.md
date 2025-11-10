@@ -54,11 +54,4 @@ docker run --name mysql-db -e MYSQL_ROOT_PASSWORD=[MYSQL_ROOT_PASSWORD] -p 3306:
 visit http://localhost:8000 and http://localhost:3000
 
 
-# Build docker for platforms linux/amd64 & linux/arm64 
-```bash
-docker buildx build \
-  --platform linux/amd64,linux/arm64 \
-  -t johnsoto718/auth-service \
-  -f auth-service/Dockerfile \
-  --push .
-  ```
+

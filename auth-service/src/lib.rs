@@ -49,13 +49,13 @@ impl Application {
             .route("/verify-2fa", post(verify_2fa_handler))
             .route("/verify-token", post(verify_token_handler))
             .with_state(app_state)
+            .layer(cors)
             .layer(
                 TraceLayer::new_for_http()
                     .make_span_with(make_span_with_request_id)
                     .on_request(on_request)
                     .on_response(on_response),
-            )
-            .layer(cors);
+            );
 
         let listener = tokio::net::TcpListener::bind(address).await?;
 
@@ -66,7 +66,7 @@ impl Application {
     }
 
     pub async fn run(self) -> Result<(), io::Error> {
-        tracing::info!("Listening on {}...", &self.address);
+        tracing::info!("Listening on {}", &self.address);
         self.server.await
     }
 }

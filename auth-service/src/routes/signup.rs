@@ -20,9 +20,8 @@ pub struct SignupResponse {
     pub message: String,
 }
 
-// naming the span “Signup”, skipping all arguments from being recorded in the trace,
-// and capturing errors with Debug formatting if they occur.
-#[tracing::instrument(name = "Signup", skip_all, err(Debug))]
+// skipping all arguments from being recorded in the trace
+#[tracing::instrument(name = "Signup", skip_all)]
 pub async fn signup_handler(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,

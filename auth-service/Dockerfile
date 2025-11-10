@@ -16,8 +16,12 @@ COPY --from=planner /app/recipe.json recipe.json
 RUN cargo chef cook --release --recipe-path recipe.json
 
 # Build application
-COPY ./auth-service ./auth-service-macros ./
+COPY auth-service/ auth-service/
+COPY auth-service-macros/ auth-service-macros/
+COPY Cargo.toml .
+
 ENV SQLX_OFFLINE=true
+
 RUN cargo build --release --bin auth-service
 
 # We do not need the Rust toolchain to run the binary!
@@ -25,6 +29,6 @@ RUN cargo build --release --bin auth-service
 FROM debian:buster-slim AS runtime
 WORKDIR /app
 COPY --from=builder /app/target/release/auth-service /usr/local/bin
-COPY --from=builder /app/assets /app/assets
+COPY --from=builder /app/auth-service/assets /app/assets
 ENV REDIS_HOST_NAME=redis
 ENTRYPOINT ["/usr/local/bin/auth-service"]

@@ -14,7 +14,8 @@ use tokio::sync::RwLock;
 
 #[tokio::main]
 async fn main() {
-    init_tracing();
+    color_eyre::install().expect("Failed to install color_eyre");
+    init_tracing().expect("Failed to initialize tracing");
 
     let mysql_pool = configure_mysql().await;
     let redis_connection = Arc::new(RwLock::new(configure_redis()));
