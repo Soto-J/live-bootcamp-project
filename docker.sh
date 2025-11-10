@@ -28,7 +28,7 @@ set +a
 
 
 # Run docker-compose commands with exported variables
-docker-compose build 
-docker-compose up
+docker compose build 
+docker compose up
 
 
