@@ -7,6 +7,7 @@ use argon2::{
     PasswordVerifier, Version,
 };
 
+use color_eyre::eyre::{self, Context};
 use sqlx::MySqlPool;
 use std::error::Error;
 
@@ -31,9 +32,11 @@ impl UserStore for MySqlUserStore {
             return Err(UserStoreError::UserAlreadyExists);
         }
 
-        let password_hash = compute_password_hash(user.password().as_ref().to_string())
-            .await
-            .map_err(|_| UserStoreError::UnexpectedError)?;
+        let password_hash = match compute_password_hash(user.password().as_ref().to_string()).await
+        {
+            Ok(password) => password,
+            Err(e) => return Err(UserStoreError::UnexpectedError(e)),
+        };
 
         sqlx::query!(
             "
@@ -46,13 +49,14 @@ impl UserStore for MySqlUserStore {
         )
         .execute(&self.pool)
         .await
-        .map_err(|_| UserStoreError::UnexpectedError)?;
+        .wrap_err("Failed to insert user to mysql database.")
+        .map_err(UserStoreError::UnexpectedError)?;
 
         Ok(())
     }
 
     #[tracing::instrument(name = "Retrieving user from MySql", skip_all)]
-    async fn get_user(&self, email: &Email) -> Result<User, UserStoreError> {
+    async fn get_user(&self, email: &Email) -> eyre::Result<User, UserStoreError> {
         let record = sqlx::query!(
             r#"
             SELECT 
@@ -70,7 +74,10 @@ impl UserStore for MySqlUserStore {
         .await
         .map_err(|_| UserStoreError::UserNotFound)?;
 
-        let email = Email::parse(record.email).map_err(|_| UserStoreError::UnexpectedError)?;
+        let email = match Email::parse(record.email) {
+            Ok(email) => email,
+            Err(e) => return Err(UserStoreError::UnexpectedError(e)),
+        };
 
         let password = Password::from(record.password_hash); // Keep From for Password since it's already hashed
 
@@ -108,7 +115,7 @@ impl UserStore for MySqlUserStore {
 async fn verify_password_hash(
     expected_password_hash: String,
     password_candidate: String,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+) -> eyre::Result<()> {
     // The span represents the execution context for the compute_password_hash function.
     let current_span = tracing::Span::current();
 
@@ -130,14 +137,13 @@ async fn verify_password_hash(
 }
 
 #[tracing::instrument(name = "Computing password hash", skip_all)]
-async fn compute_password_hash(password: String) -> Result<String, Box<dyn Error + Send + Sync>> {
-
-    let current_span: tracing::Span = tracing::Span::current(); 
+async fn compute_password_hash(password: String) -> eyre::Result<String> {
+    let current_span: tracing::Span = tracing::Span::current();
 
     let result = tokio::task::spawn_blocking(move || {
-        // This code block ensures that the operations within the closure are executed within the context of the current span. 
+        // This code block ensures that the operations within the closure are executed within the context of the current span.
         // This is especially useful for tracing operations that are performed in a different thread or task, such as within tokio::task::spawn_blocking.
-        current_span.in_scope(|| { 
+        current_span.in_scope(|| {
             let salt: SaltString = SaltString::generate(&mut rand::thread_rng());
             let password_hash = Argon2::new(
                 Algorithm::Argon2id,

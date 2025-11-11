@@ -65,7 +65,7 @@ mod tests {
 
         // Test adding an existing user
         let result = user_store.add_user(user).await;
-        assert_eq!(result, Err(UserStoreError::UserAlreadyExists));
+        assert_eq!(result, Err(UserStoreError::UserAlreadyExists))
     }
 
     #[tokio::test]

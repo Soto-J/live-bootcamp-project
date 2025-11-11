@@ -1,3 +1,4 @@
+use color_eyre::eyre;
 use serde::{Deserialize, Serialize};
 use validator::ValidateEmail;
 
@@ -5,9 +6,9 @@ use validator::ValidateEmail;
 pub struct Email(pub String);
 
 impl Email {
-    pub fn parse(email: String) -> Result<Email, String> {
+    pub fn parse(email: String) -> eyre::Result<Email> {
         if !(&email).validate_email() {
-            return Err(format!("{} is not a valid email.", email));
+            return Err(eyre::eyre!("{} is not a valid email.", email));
         }
 
         Ok(Self(email))
@@ -33,12 +34,14 @@ mod test {
     #[test]
     fn email_missing_at_symbol_is_rejected() {
         let email = "ursuladomain.com".to_string();
+
         assert!(Email::parse(email).is_err());
     }
 
     #[test]
     fn email_missing_subject_is_rejected() {
         let email = "@domain.com".to_string();
+
         assert!(Email::parse(email).is_err());
     }
 

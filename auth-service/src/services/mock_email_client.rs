@@ -1,23 +1,25 @@
 use crate::domain::{Email, EmailClient};
+use color_eyre::eyre;
+use color_eyre::eyre::{Context, ContextCompat, Ok};
 
 pub struct MockEmailClient;
 
 #[async_trait::async_trait]
 impl EmailClient for MockEmailClient {
+    #[tracing::instrument(name = "Send_Email", skip_all)]
     async fn send_email(
         &self,
         recipient: &Email,
         subject: &str,
         content: &str,
-    ) -> Result<(), String> {
-        // Our mock email client will simply log the recipient, subject, and content to standard output
-        println!(
+    ) -> eyre::Result<String> {
+        tracing::debug!(
             "Sending email to {} with subject: {} and content: {}",
             recipient.as_ref(),
             subject,
             content
         );
 
-        Ok(())
+        Ok("mock-email-sent".into())
     }
 }
