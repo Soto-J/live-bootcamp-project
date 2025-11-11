@@ -27,7 +27,7 @@ fn create_auth_cookie(token: String) -> Cookie<'static> {
 
 fn generate_auth_token(email: &Email) -> eyre::Result<String> {
     let delta = chrono::Duration::try_seconds(TOKEN_TTL_SECONDS)
-        .wrap_err("Failed to create 10 minute time delta.")?;
+        .ok_or(eyre::eyre!("Failed to create 10 minute time delta."))?;
 
     // Create JWT expiration time
     let exp = Utc::now()
