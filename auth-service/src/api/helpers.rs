@@ -8,11 +8,9 @@ use crate::{
     Application,
 };
 
-use fake::{
-    faker::internet::en::{self, SafeEmail},
-    Fake,
-};
-use std::{ops::Range, sync::Arc};
+use fake::{faker::internet::en::SafeEmail, Fake};
+use secrecy::Secret;
+use std::sync::Arc;
 use tokio::sync::RwLock;
 
 pub struct TestApp {
@@ -109,10 +107,26 @@ pub fn get_random_email() -> String {
     SafeEmail().fake()
 }
 
-pub fn get_random_password() -> String {
-    en::Password(Range { start: 8, end: 15 }).fake()
+pub fn get_random_password() -> Secret<String> {
+    use rand::{distr::Alphanumeric, rng, Rng};
+
+    let password: String = rng()
+        .sample_iter(&Alphanumeric)
+        .take(15)
+        .map(char::from)
+        .collect();
+
+    Secret::new(password)
 }
 
-pub fn get_invalid_password() -> String {
-    en::Password(Range { start: 0, end: 7 }).fake()
+pub fn get_invalid_password() -> Secret<String> {
+    use rand::{distr::Alphanumeric, rng, Rng};
+
+    let password: String = rng()
+        .sample_iter(&Alphanumeric)
+        .take(7)
+        .map(char::from)
+        .collect();
+
+    Secret::new(password)
 }

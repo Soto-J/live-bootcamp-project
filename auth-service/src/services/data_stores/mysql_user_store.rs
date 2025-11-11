@@ -2,14 +2,14 @@ use crate::domain::{
     data_stores::{UserStore, UserStoreError},
     Email, Password, User,
 };
-use argon2::{
-    password_hash::SaltString, Algorithm, Argon2, Params, PasswordHash, PasswordHasher,
-    PasswordVerifier, Version,
-};
 
+use argon2::{
+    password_hash::{rand_core::OsRng, SaltString},
+    Algorithm, Argon2, Params, PasswordHash, PasswordHasher, PasswordVerifier, Version,
+};
 use color_eyre::eyre::{self, Context};
+use secrecy::{ExposeSecret, Secret};
 use sqlx::MySqlPool;
-use std::error::Error;
 
 #[derive(Debug, Clone)]
 pub struct MySqlUserStore {
@@ -32,19 +32,17 @@ impl UserStore for MySqlUserStore {
             return Err(UserStoreError::UserAlreadyExists);
         }
 
-        let password_hash = match compute_password_hash(user.password().as_ref().to_string()).await
-        {
-            Ok(password) => password,
-            Err(e) => return Err(UserStoreError::UnexpectedError(e)),
-        };
+        let password_hash = compute_password_hash(user.password.as_ref().to_owned())
+            .await
+            .map_err(UserStoreError::UnexpectedError)?;
 
         sqlx::query!(
             "
             INSERT INTO users (email, password_hash, requires_2fa) 
             VALUES (?, ?, ?)
             ",
-            user.email().as_ref(),
-            password_hash,
+            user.email().as_ref().expose_secret(),
+            &password_hash.expose_secret(),
             user.has_2fa()
         )
         .execute(&self.pool)
@@ -68,18 +66,18 @@ impl UserStore for MySqlUserStore {
             WHERE
                 email = ?
             "#,
-            email.as_ref()
+            email.as_ref().expose_secret()
         )
         .fetch_one(&self.pool)
         .await
         .map_err(|_| UserStoreError::UserNotFound)?;
 
-        let email = match Email::parse(record.email) {
+        let email = match Email::parse(Secret::new(record.email)) {
             Ok(email) => email,
             Err(e) => return Err(UserStoreError::UnexpectedError(e)),
         };
 
-        let password = Password::from(record.password_hash); // Keep From for Password since it's already hashed
+        let password = Password::from(Secret::new(record.password_hash));
 
         Ok(User::new(email, password, record.requires_2fa))
     }
@@ -99,13 +97,13 @@ impl UserStore for MySqlUserStore {
             WHERE
                 email = ?
             ",
-            email.as_ref()
+            email.as_ref().expose_secret()
         )
         .fetch_one(&self.pool)
         .await
         .map_err(|_| UserStoreError::UserNotFound)?;
 
-        verify_password_hash(record.password_hash, password.as_ref().to_string())
+        verify_password_hash(Secret::new(record.password_hash), password.as_ref().clone())
             .await
             .map_err(|_| UserStoreError::IncorrectCredentials)
     }
@@ -113,21 +111,21 @@ impl UserStore for MySqlUserStore {
 
 #[tracing::instrument(name = "Verify password hash", skip_all)]
 async fn verify_password_hash(
-    expected_password_hash: String,
-    password_candidate: String,
+    expected_password_hash: Secret<String>,
+    password_candidate: Secret<String>,
 ) -> eyre::Result<()> {
-    // The span represents the execution context for the compute_password_hash function.
     let current_span = tracing::Span::current();
 
     let result = tokio::task::spawn_blocking(move || {
-        // ensures that the operations within the closure are executed within the context of the current span.
-        // useful for tracing operations that are performed in a different thread or task, such as within tokio::task::spawn_blocking.
         current_span.in_scope(|| {
             let expected_password_hash: PasswordHash<'_> =
-                PasswordHash::new(&expected_password_hash)?;
+                PasswordHash::new(expected_password_hash.expose_secret())?;
 
             Argon2::default()
-                .verify_password(password_candidate.as_bytes(), &expected_password_hash)
+                .verify_password(
+                    password_candidate.expose_secret().as_bytes(),
+                    &expected_password_hash,
+                )
                 .map_err(|e| e.into())
         })
     })
@@ -137,23 +135,23 @@ async fn verify_password_hash(
 }
 
 #[tracing::instrument(name = "Computing password hash", skip_all)]
-async fn compute_password_hash(password: String) -> eyre::Result<String> {
+async fn compute_password_hash(password: Secret<String>) -> eyre::Result<Secret<String>> {
     let current_span: tracing::Span = tracing::Span::current();
 
     let result = tokio::task::spawn_blocking(move || {
         // This code block ensures that the operations within the closure are executed within the context of the current span.
         // This is especially useful for tracing operations that are performed in a different thread or task, such as within tokio::task::spawn_blocking.
         current_span.in_scope(|| {
-            let salt: SaltString = SaltString::generate(&mut rand::thread_rng());
+            let salt: SaltString = SaltString::generate(&mut OsRng);
             let password_hash = Argon2::new(
                 Algorithm::Argon2id,
                 Version::V0x13,
                 Params::new(15000, 2, 1, None)?,
             )
-            .hash_password(password.as_bytes(), &salt)?
+            .hash_password(password.expose_secret().as_bytes(), &salt)?
             .to_string();
 
-            Ok(password_hash)
+            Ok(Secret::new(password_hash))
         })
     })
     .await;

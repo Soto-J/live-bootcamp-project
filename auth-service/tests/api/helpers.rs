@@ -14,6 +14,7 @@ use fake::{
     Fake,
 };
 use reqwest::cookie::Jar;
+use secrecy::Secret;
 use sqlx::MySqlPool;
 use std::{ops::Range, sync::Arc};
 use tokio::sync::RwLock;
@@ -224,8 +225,8 @@ pub fn get_random_email() -> String {
     SafeEmail().fake()
 }
 
-pub fn get_random_password() -> String {
-    en::Password(Range { start: 8, end: 15 }).fake()
+pub fn get_random_password() -> Secret<String> {
+    Secret::new(en::Password(Range { start: 8, end: 15 }).fake())
 }
 
 pub fn get_invalid_password() -> String {

@@ -9,6 +9,7 @@ use auth_service::{
     utils::constants::JWT_COOKIE_NAME,
 };
 use auth_service_macros::api_test;
+use secrecy::Secret;
 
 #[api_test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
@@ -46,11 +47,11 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     let email = get_random_email();
     let password = get_random_password();
 
-    let signup_credentials = serde_json::json!(SignupRequest {
-        email: email.clone(),
-        password: password.clone(),
-        requires_2fa: true
-    });
+    let signup_credentials = SignupRequest {
+        email: Secret::new(email),
+        password,
+        requires_2fa: true,
+    };
 
     app.post_signup(&signup_credentials).await;
 
