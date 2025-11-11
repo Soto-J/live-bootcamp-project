@@ -68,7 +68,7 @@ pub async fn login_handler(
     let updated_jar = cookie_jar.add(auth_cookie);
 
     if !user.has_2fa() {
-        return handle_no_2fa(&user.email(), &state, updated_jar.clone()).await;
+        return handle_no_2fa(&user.email(), updated_jar.clone()).await;
     }
 
     handle_2fa(&valid_email, &state, updated_jar.clone()).await
@@ -81,6 +81,7 @@ fn parse_credentials(email: String, password: String) -> Result<(Email, Password
     Ok((email, password))
 }
 
+#[tracing::instrument(name = "Handle_2FA", skip_all)]
 async fn handle_2fa(
     email: &Email,
     state: &AppState,
@@ -109,7 +110,7 @@ async fn handle_2fa(
         .send_email(&email, "2FA Code", two_fa_code.as_ref())
         .await
     {
-        return (jar, Err(AuthAPIError::UnexpectedError(e)));
+        return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
     };
 
     let response = Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
@@ -120,6 +121,7 @@ async fn handle_2fa(
     (jar, Ok((StatusCode::PARTIAL_CONTENT, response)))
 }
 
+#[tracing::instrument(name = "Handle_No_2FA", skip_all)]
 async fn handle_no_2fa(
     email: &Email,
     jar: CookieJar,

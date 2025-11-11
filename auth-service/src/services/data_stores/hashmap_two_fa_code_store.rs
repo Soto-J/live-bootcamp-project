@@ -24,10 +24,8 @@ impl TwoFACodeStore for HashmapTwoFACodeStore {
     }
 
     async fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError> {
-        match self.codes.remove(email) {
-            Some(_) => Ok(()),
-            None => Err(TwoFACodeStoreError::UnexpectedError),
-        }
+        self.codes.remove(email);
+        Ok(())
     }
 
     async fn get_code(

@@ -1,11 +1,12 @@
+use color_eyre::eyre;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Password(pub String);
 impl Password {
-    pub fn parse(password: String) -> Result<Password, String> {
+    pub fn parse(password: String) -> eyre::Result<Password> {
         if Self::invalid_password(&password) {
-            return Err("Failed to parse string to a Password type".into());
+            return Err(eyre::eyre!("Failed to parse string to a Password type"));
         }
 
         Ok(Self(password))
@@ -32,15 +33,8 @@ impl From<String> for Password {
     }
 }
 
-// impl From<Password> for String {
-//     fn from(value: Password) -> Self {
-//         value.0
-//     }
-// }
-
 #[cfg(test)]
 mod tests {
-
     use super::Password;
 
     #[test]

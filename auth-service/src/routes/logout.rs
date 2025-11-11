@@ -7,6 +7,7 @@ use crate::{
 use axum::{extract::State, http::StatusCode, response::IntoResponse};
 use axum_extra::extract::CookieJar;
 
+#[tracing::instrument(name = "Logout", skip_all)]
 pub async fn logout_handler(
     State(state): State<AppState>,
     cookie_jar: CookieJar,
@@ -23,15 +24,14 @@ pub async fn logout_handler(
         Err(_) => return (cookie_jar, Err(AuthAPIError::InvalidToken)),
     };
 
-    if state
+    if let Err(e) = state
         .banned_token_store
         .write()
         .await
         .add_token(token)
         .await
-        .is_err()
     {
-        return (cookie_jar, Err(AuthAPIError::UnexpectedError));
+        return (cookie_jar, Err(AuthAPIError::UnexpectedError(e.into())));
     }
 
     let cookie_jar = cookie_jar.remove(JWT_COOKIE_NAME);

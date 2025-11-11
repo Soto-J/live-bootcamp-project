@@ -25,6 +25,7 @@ pub struct Verify2FAResponse {
     pub message: String,
 }
 
+#[tracing::instrument(name = "Verify_2FA", skip_all)]
 pub async fn verify_2fa_handler(
     State(state): State<AppState>,
     cookie_jar: CookieJar,
@@ -51,14 +52,14 @@ pub async fn verify_2fa_handler(
 
     let auth_cookie = match generate_auth_cookie(&email) {
         Ok(cookie) => cookie,
-        _ => return (cookie_jar, Err(AuthAPIError::UnexpectedError)),
+        Err(e) => return (cookie_jar, Err(AuthAPIError::UnexpectedError(e))),
     };
 
     let updated_jar = cookie_jar.add(auth_cookie);
 
-    if two_fa_store.remove_code(&email).await.is_err() {
-        return (updated_jar, Err(AuthAPIError::UnexpectedError));
-    };
+    if let Err(e) = two_fa_store.remove_code(&email).await {
+        return (updated_jar, Err(AuthAPIError::UnexpectedError(e.into())));
+    }
 
     (updated_jar, Ok(StatusCode::OK.into_response()))
 }

@@ -6,8 +6,6 @@ use color_eyre::eyre;
 use reqwest::StatusCode;
 use serde::{Deserialize, Serialize};
 
-use crate::domain::data_stores::TwoFACodeStoreError;
-
 #[derive(Serialize, Deserialize, Clone)]
 pub struct ErrorResponse {
     pub error: String,
@@ -17,17 +15,15 @@ pub struct ErrorResponse {
 pub enum AuthAPIError {
     #[error("User already exists")]
     UserAlreadyExists,
-    #[error("")]
+    #[error("Invalid credentials")]
     InvalidCredentials,
-    #[error("")]
+    #[error("Incorrect credentials")]
     IncorrectCredentials,
-    #[error("")]
+    #[error("Missing token")]
     MissingToken,
-    #[error("")]
+    #[error("Invalid token")]
     InvalidToken,
-    #[error("")]
-    Missing2FA,
-    #[error("")]
+    #[error("Unexpected error")]
     UnexpectedError(#[source] eyre::Report),
 }
 
@@ -43,8 +39,7 @@ impl IntoResponse for AuthAPIError {
             }
             AuthAPIError::MissingToken => (StatusCode::BAD_REQUEST, "Missing auth token"),
             AuthAPIError::InvalidToken => (StatusCode::UNAUTHORIZED, "Invalid auth token"),
-            AuthAPIError::Missing2FA => (StatusCode::PARTIAL_CONTENT, "2FA Missing"),
-            AuthAPIError::UnexpectedError(e) => {
+            AuthAPIError::UnexpectedError(_) => {
                 (StatusCode::INTERNAL_SERVER_ERROR, "Unexpected error")
             }
         };
@@ -56,14 +51,6 @@ impl IntoResponse for AuthAPIError {
         (status, body).into_response()
     }
 }
-
-impl std::fmt::Display for AuthAPIError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
-impl std::error::Error for AuthAPIError {}
 
 fn log_error_chain(e: &(dyn std::error::Error + 'static)) {
     let separator =

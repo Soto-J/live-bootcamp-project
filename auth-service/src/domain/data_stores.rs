@@ -5,13 +5,32 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 // ~~~ User Store
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, thiserror::Error)]
 pub enum UserStoreError {
+    #[error("User already exists")]
     UserAlreadyExists,
+    #[error("User not found")]
     UserNotFound,
+    #[error("Invalid credentials")]
     InvalidCredentials,
-    UnexpectedError,
+    #[error("Incorrect credientials")]
     IncorrectCredentials,
+    #[error("Unexpected error")]
+    UnexpectedError(#[source] eyre::Report),
+}
+
+impl PartialEq for UserStoreError {
+    fn eq(&self, other: &Self) -> bool {
+        core::mem::discriminant(self) == core::mem::discriminant(other)
+
+        // matches!(
+        //     (self, other),
+        //     (Self::UserAlreadyExists, Self::UserAlreadyExists)
+        //         | (Self::UserNotFound, Self::UserNotFound)
+        //         | (Self::InvalidCredentials, Self::InvalidCredentials)
+        //         | (Self::UnexpectedError(_), Self::UnexpectedError(_))
+        // )
+    }
 }
 
 #[async_trait::async_trait]
@@ -80,11 +99,7 @@ pub enum TwoFACodeStoreError {
 }
 impl PartialEq for TwoFACodeStoreError {
     fn eq(&self, other: &Self) -> bool {
-        matches!(
-            (self, other),
-            (Self::LoginAttemptIdNotFound, Self::LoginAttemptIdNotFound)
-                | (Self::UnexpectedError(_), Self::UnexpectedError(_))
-        )
+        core::mem::discriminant(self) == core::mem::discriminant(other)
     }
 }
 
@@ -96,7 +111,7 @@ pub trait TwoFACodeStore {
         login_attempt_id: LoginAttemptId,
         code: TwoFACode,
     ) -> Result<(), TwoFACodeStoreError>;
-    async fn remove_code(&mut self, email: &Email) -> Result<(), TwoFACodeStoreError>;
+    async fn remove_code(&mut self, email: &Email) -> std::result::Result<(), TwoFACodeStoreError>;
     async fn get_code(
         &self,
         email: &Email,

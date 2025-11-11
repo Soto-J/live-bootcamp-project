@@ -15,6 +15,7 @@ pub struct VerifyTokenResponse {
     message: String,
 }
 
+#[tracing::instrument(name = "Verify_Token", skip_all)]
 pub async fn verify_token_handler(
     State(state): State<AppState>,
     Json(request): Json<VerifyTokenRequest>,
