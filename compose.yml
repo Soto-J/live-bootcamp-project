@@ -25,25 +25,9 @@ services:
       MYSQL_USER: john
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
       REDIS_HOST_NAME: redis
+      POSTMARK_AUTH_TOKEN: ${POSTMARK_AUTH_TOKEN}
     ports:
       - "3000:3000" # expose port 3000 so that applications outside the container can connect to it 
-
-    # depends_on:
-    #  - db
-
-  # db:
-  #   image: mysql:8.0
-  #   container_name: mysql-db
-  #   restart: always
-  #   environment:
-  #     MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
-  #     MYSQL_DATABASE: rust_auth_service
-  #     MYSQL_USER: john
-  #     MYSQL_PASSWORD: ${MYSQL_PASSWORD}
-  #   ports:
-  #       - "3307:3306"
-  #   volumes:
-  #       - db:/var/lib/mysql
   
   redis:
     image: redis:7.0-alpine

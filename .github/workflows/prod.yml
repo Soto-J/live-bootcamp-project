@@ -135,6 +135,7 @@ jobs:
             export DATABASE_URL=${{ secrets.DATABASE_URL }}
             export MYSQL_SERVER_URL=${{ secrets.MYSQL_SERVER_URL }}
             export MYSQL_ROOT_PASSWORD=${{ secrets.MYSQL_ROOT_PASSWORD }}
+            export POSTMARK_AUTH_TOKEN=${{ secrets.POSTMARK_AUTH_TOKEN }} 
 
             # Pull and start services
             docker compose down
