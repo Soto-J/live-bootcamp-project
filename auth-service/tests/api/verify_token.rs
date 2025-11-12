@@ -2,13 +2,14 @@ use crate::helpers::{get_random_email, TestApp};
 
 use auth_service::{domain::error::ErrorResponse, utils::constants::JWT_COOKIE_NAME};
 use auth_service_macros::api_test;
+use secrecy::ExposeSecret;
 
 #[api_test]
 async fn should_return_200_valid_token() {
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
-        "email": random_email,
+        "email": random_email.expose_secret(),
         "password": "password123",
         "requires2FA": false
     });
@@ -18,7 +19,7 @@ async fn should_return_200_valid_token() {
     assert_eq!(response.status().as_u16(), 201);
 
     let login_body = serde_json::json!({
-        "email": random_email,
+        "email": random_email.expose_secret(),
         "password": "password123",
     });
 
@@ -60,7 +61,7 @@ async fn should_return_401_if_banned_token() {
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
-        "email": random_email,
+        "email": random_email.expose_secret(),
         "password": "password123",
         "requires2FA": false
     });
@@ -70,7 +71,7 @@ async fn should_return_401_if_banned_token() {
     assert_eq!(response.status().as_u16(), 201);
 
     let login_body = serde_json::json!({
-        "email": random_email,
+        "email": random_email.expose_secret(),
         "password": "password123",
     });
 

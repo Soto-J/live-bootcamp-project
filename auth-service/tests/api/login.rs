@@ -2,32 +2,30 @@ use crate::helpers::{get_random_email, get_random_password, TestApp};
 
 use auth_service::{
     domain::{email::Email, error::ErrorResponse},
-    routes::{
-        login::{LoginRequest, TwoFactorAuthResponse},
-        signup::SignupRequest,
-    },
+    routes::login::TwoFactorAuthResponse,
     utils::constants::JWT_COOKIE_NAME,
 };
 use auth_service_macros::api_test;
-use secrecy::Secret;
+use secrecy::{ExposeSecret, Secret};
 
 #[api_test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
-    let random_email = get_random_email();
+    let email = get_random_email();
+    let password = Secret::new("password123".to_owned());
 
-    let signup_body = serde_json::json!({
-        "email": random_email,
-        "password": "password123",
-        "requires2FA": false
+    let signup_body = serde_json::json!( {
+        "email": email.expose_secret(),
+        "password": password.expose_secret(),
+        "requires_2fa": false,
     });
 
     let response = app.post_signup(&signup_body).await;
 
     assert_eq!(response.status().as_u16(), 201);
 
-    let login_body = serde_json::json!({
-        "email": random_email,
-        "password": "password123",
+    let login_body = serde_json::json!( {
+        "email": email.expose_secret(),
+        "password": password.expose_secret(),
     });
 
     let response = app.post_login(&login_body).await;
@@ -47,17 +45,17 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
     let email = get_random_email();
     let password = get_random_password();
 
-    let signup_credentials = SignupRequest {
-        email: Secret::new(email),
-        password,
-        requires_2fa: true,
-    };
+    let signup_credentials = serde_json::json!( {
+        "email":email.expose_secret(),
+        "password": password.expose_secret(),
+        "requires_2fa": true,
+    });
 
     app.post_signup(&signup_credentials).await;
 
-    let login_credentials = serde_json::json!(LoginRequest {
-        email: email.clone(),
-        password,
+    let login_credentials = serde_json::json!({
+        "email": email.expose_secret(),
+        "password": password.expose_secret(),
     });
 
     let response = app.post_login(&login_credentials).await;
@@ -79,7 +77,10 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         .await
         .unwrap();
 
-    assert_eq!(json_body.login_attempt_id, response.0);
+    assert_eq!(
+        json_body.login_attempt_id,
+        response.0.as_ref().expose_secret().to_owned()
+    );
 }
 
 #[api_test]
@@ -87,17 +88,17 @@ pub async fn should_return_400_if_invalid_credentials() {
     let email = get_random_email();
     let password = get_random_password();
 
-    let signup_credentials = serde_json::json!(SignupRequest {
-        email: email.clone(),
-        password,
-        requires_2fa: false
+    let signup_credentials = serde_json::json!( {
+        "email": email.expose_secret(),
+        "password": password.expose_secret(),
+        "requires_2fa": false,
     });
 
     app.post_signup(&signup_credentials).await;
 
-    let login_credentials = serde_json::json!(LoginRequest {
-        email: "hello world".into(),
-        password: "".into()
+    let login_credentials = serde_json::json!( {
+        "email": "hello world",
+        "password": "",
     });
 
     let response = app.post_login(&login_credentials).await;
@@ -119,17 +120,18 @@ pub async fn should_return_401_if_incorrect_credentials() {
     let email = get_random_email();
     let password = get_random_password();
 
-    app.post_signup(&serde_json::json!(SignupRequest {
-        email,
-        password,
-        requires_2fa: false
+    app.post_signup(&serde_json::json!({
+        "email": email.expose_secret(),
+        "password": password.expose_secret(),
+        "requires_2fa": false
     }))
     .await;
 
     let email = get_random_email();
     let password = get_random_password();
 
-    let credentials = serde_json::json!(LoginRequest { email, password });
+    let credentials =
+        serde_json::json!({ "email": email.expose_secret(), "password": password.expose_secret() });
 
     let response = app.post_login(&credentials).await;
 
@@ -149,7 +151,7 @@ async fn should_return_422_if_malformed_credentials() {
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
-        "email": random_email,
+        "email": random_email.expose_secret(),
         "password": "password123",
         "requires2FA": false
     });
@@ -163,7 +165,7 @@ async fn should_return_422_if_malformed_credentials() {
             "password": "password123",
         }),
         serde_json::json!({
-            "email": random_email,
+            "email": random_email.expose_secret(),
         }),
         serde_json::json!({}),
     ];

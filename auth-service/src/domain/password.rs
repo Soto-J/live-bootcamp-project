@@ -53,7 +53,7 @@ impl Hash for Password {
 mod tests {
     use super::*;
     use crate::domain::Email;
-    
+
     use fake::faker::internet::en::SafeEmail;
     use fake::Fake;
     use secrecy::Secret;

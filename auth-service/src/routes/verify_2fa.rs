@@ -34,7 +34,7 @@ pub async fn verify_2fa_handler(
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
     let (Ok(email), Ok(login_attempt_id_request), Ok(two_fa_code_request)) = (
         Email::parse(Secret::new(request.email)),
-        LoginAttemptId::parse(request.login_attempt_id),
+        LoginAttemptId::parse(Secret::new(request.login_attempt_id)),
         TwoFACode::parse(request.two_fa_code),
     ) else {
         return (cookie_jar, Err(AuthAPIError::InvalidCredentials));

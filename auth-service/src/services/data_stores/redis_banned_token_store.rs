@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use color_eyre::eyre::Context;
 use redis::{Commands, Connection};
+use secrecy::{ExposeSecret, Secret};
 use tokio::sync::RwLock;
 
 use crate::{
@@ -23,13 +24,13 @@ impl RedisBannedTokenStore {
 #[async_trait::async_trait]
 impl BannedTokenStore for RedisBannedTokenStore {
     #[tracing::instrument(name = "Add_Token", skip_all)]
-    async fn add_token(&mut self, token: String) -> Result<(), BannedTokenStoreError> {
+    async fn add_token(&mut self, token: Secret<String>) -> Result<(), BannedTokenStoreError> {
         let expired_in: u64 = TOKEN_TTL_SECONDS
             .try_into()
             .wrap_err("Failed to create expiration token.")
             .map_err(BannedTokenStoreError::UnexpectedError)?;
 
-        let token_key = get_key(&token);
+        let token_key = get_key(token.expose_secret());
 
         let _: () = self
             .conn
@@ -42,8 +43,8 @@ impl BannedTokenStore for RedisBannedTokenStore {
         Ok(())
     }
     #[tracing::instrument(name = "Contains_Token", skip_all)]
-    async fn contains_token(&self, token: &str) -> Result<bool, BannedTokenStoreError> {
-        let token_key = get_key(token);
+    async fn contains_token(&self, token: &Secret<String>) -> Result<bool, BannedTokenStoreError> {
+        let token_key = get_key(token.expose_secret());
 
         let is_banned = self
             .conn

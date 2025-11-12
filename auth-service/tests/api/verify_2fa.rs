@@ -3,13 +3,14 @@ use auth_service::{
     api::helpers::get_random_password,
     domain::{data_stores::LoginAttemptId, error::ErrorResponse, Email},
     routes::{
-        login::{LoginRequest, LoginResponse, TwoFactorAuthResponse},
-        signup::{SignupRequest, SignupResponse},
+        login::{LoginResponse, TwoFactorAuthResponse},
+        signup::SignupResponse,
         verify_2fa::Verify2FARequest,
     },
     utils::constants::JWT_COOKIE_NAME,
 };
 use auth_service_macros::api_test;
+use secrecy::ExposeSecret;
 
 #[api_test]
 async fn should_return_200_if_correct_code() {
@@ -17,10 +18,10 @@ async fn should_return_200_if_correct_code() {
     let password = get_random_email();
 
     let response = app
-        .post_signup(&serde_json::json!(SignupRequest {
-            email: email.clone(),
-            password: password.clone(),
-            requires_2fa: true,
+        .post_signup(&serde_json::json!( {
+            "email": email.clone().expose_secret(),
+            "password": password.clone().expose_secret(),
+            "requires_2fa": true,
         }))
         .await;
 
@@ -36,9 +37,9 @@ async fn should_return_200_if_correct_code() {
     );
 
     let response = app
-        .post_login(&serde_json::json!(LoginRequest {
-            email: email.clone(),
-            password: password.clone(),
+        .post_login(&serde_json::json!( {
+            "email": email.clone().expose_secret(),
+            "password": password.clone().expose_secret(),
         }))
         .await;
 
@@ -59,15 +60,15 @@ async fn should_return_200_if_correct_code() {
             .expect("Could not deserialize response body to UserBody"),
         LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
             message: "2FA required".into(),
-            login_attempt_id: login_attempt_id.clone().into(),
+            login_attempt_id: login_attempt_id.clone().as_ref().expose_secret().to_owned(),
         })
     );
 
     let response = app
-        .post_verify_2fa(&serde_json::json!(Verify2FARequest {
-            email: email,
-            login_attempt_id: login_attempt_id.into(),
-            two_fa_code: two_fa_code.into(),
+        .post_verify_2fa(&serde_json::json!( {
+            "email": email.expose_secret(),
+            "login_attempt_id": login_attempt_id.as_ref().expose_secret(),
+            "two_fa_code": two_fa_code.as_ref().expose_secret(),
         }))
         .await;
 
@@ -107,10 +108,10 @@ async fn should_return_401_if_incorrect_credentials() {
     let password = get_random_email();
 
     let signup_response = app
-        .post_signup(&serde_json::json!(SignupRequest {
-            email: email.clone(),
-            password: password.clone(),
-            requires_2fa: true,
+        .post_signup(&serde_json::json!( {
+            "email": email.clone().expose_secret(),
+            "password": password.clone().expose_secret(),
+            "requires_2fa": true,
         }))
         .await;
 
@@ -126,9 +127,9 @@ async fn should_return_401_if_incorrect_credentials() {
     );
 
     let login_response = app
-        .post_login(&serde_json::json!(LoginRequest {
-            email: email.clone(),
-            password: password.clone(),
+        .post_login(&serde_json::json!( {
+            "email": email.clone().expose_secret(),
+            "password": password.clone().expose_secret(),
         }))
         .await;
 
@@ -148,15 +149,15 @@ async fn should_return_401_if_incorrect_credentials() {
             .expect("Could not deserialize response body to UserBody"),
         LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
             message: "2FA required".into(),
-            login_attempt_id: login_attempt_id.into()
+            login_attempt_id: login_attempt_id.as_ref().expose_secret().to_owned()
         })
     );
 
     let verify_2fa_response = app
-        .post_verify_2fa(&serde_json::json!(Verify2FARequest {
-            email: email,
-            login_attempt_id: LoginAttemptId::default().into(),
-            two_fa_code: "1234545".into(),
+        .post_verify_2fa(&serde_json::json!( {
+            "email": email.expose_secret(),
+            "login_attempt_id": LoginAttemptId::default().as_ref().expose_secret(),
+            "two_fa_code": "1234545".to_owned(),
         }))
         .await;
 
@@ -177,10 +178,10 @@ async fn should_return_401_if_old_code() {
     let password = get_random_password();
 
     let signup_response = app
-        .post_signup(&serde_json::json!(SignupRequest {
-            email: email.clone(),
-            password: password.clone(),
-            requires_2fa: true
+        .post_signup(&serde_json::json!( {
+            "email": email.clone().expose_secret(),
+            "password": password.clone().expose_secret(),
+            "requires_2fa": true
         }))
         .await;
 
@@ -196,9 +197,9 @@ async fn should_return_401_if_old_code() {
     );
 
     let login_response = app
-        .post_login(&serde_json::json!(LoginRequest {
-            email: email.clone(),
-            password: password.clone(),
+        .post_login(&serde_json::json!( {
+            "email": email.clone().expose_secret(),
+            "password": password.clone().expose_secret(),
         }))
         .await;
 
@@ -219,7 +220,7 @@ async fn should_return_401_if_old_code() {
             .expect("Could not deserialize response body to UserBody"),
         LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
             message: "2FA required".into(),
-            login_attempt_id: login_attempt_id.into(),
+            login_attempt_id: login_attempt_id.as_ref().expose_secret().to_owned(),
         })
     );
 
@@ -232,17 +233,17 @@ async fn should_return_401_if_old_code() {
             .expect("Failed to get 2FA")
     };
 
-    app.post_login(&serde_json::json!(LoginRequest {
-        email: email.clone(),
-        password
+    app.post_login(&serde_json::json!( {
+        "email": email.clone().expose_secret(),
+        "password": password.expose_secret()
     }))
     .await;
 
     let verify_2fa_response = app
-        .post_verify_2fa(&serde_json::json!(Verify2FARequest {
-            email,
-            login_attempt_id: login_attempt_id.into(),
-            two_fa_code: two_fa_code.into(),
+        .post_verify_2fa(&serde_json::json!( {
+            "email": email.expose_secret(),
+            "login_attempt_id": login_attempt_id.as_ref().expose_secret(),
+            "two_fa_code": two_fa_code.as_ref().expose_secret(),
         }))
         .await;
 
@@ -263,10 +264,10 @@ async fn should_return_401_if_same_code_twice() {
     let password = get_random_password();
 
     let signup_response = app
-        .post_signup(&serde_json::json!(SignupRequest {
-            email: email.clone(),
-            password: password.clone(),
-            requires_2fa: true
+        .post_signup(&serde_json::json!( {
+            "email": email.clone().expose_secret(),
+            "password": password.clone().expose_secret(),
+            "requires_2fa": true
         }))
         .await;
 
@@ -282,9 +283,9 @@ async fn should_return_401_if_same_code_twice() {
     );
 
     let login_response = app
-        .post_login(&serde_json::json!(LoginRequest {
-            email: email.clone(),
-            password: password.clone(),
+        .post_login(&serde_json::json!( {
+            "email": email.clone().expose_secret(),
+            "password": password.clone().expose_secret(),
         }))
         .await;
 
@@ -305,25 +306,25 @@ async fn should_return_401_if_same_code_twice() {
             .expect("Could not deserialize response body to UserBody"),
         LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
             message: "2FA required".into(),
-            login_attempt_id: login_attempt_id.clone().into(),
+            login_attempt_id: login_attempt_id.clone().as_ref().expose_secret().to_owned(),
         })
     );
 
     let verify_2fa_resposne = app
-        .post_verify_2fa(&serde_json::json!(Verify2FARequest {
-            email: email.clone(),
-            login_attempt_id: login_attempt_id.clone().into(),
-            two_fa_code: two_fa_code.clone().into()
+        .post_verify_2fa(&serde_json::json!( {
+            "email": email.clone().expose_secret(),
+            "login_attempt_id": login_attempt_id.clone().as_ref().expose_secret(),
+            "two_fa_code": two_fa_code.as_ref().expose_secret()
         }))
         .await;
 
     assert_eq!(verify_2fa_resposne.status().as_u16(), 200);
 
     let second_verify_2fa_resposne = app
-        .post_verify_2fa(&serde_json::json!(Verify2FARequest {
-            email,
-            login_attempt_id: login_attempt_id.into(),
-            two_fa_code: two_fa_code.into()
+        .post_verify_2fa(&serde_json::json!( {
+            "email": email.expose_secret(),
+            "login_attempt_id": login_attempt_id.as_ref().expose_secret(),
+            "two_fa_code": two_fa_code.as_ref().expose_secret()
         }))
         .await;
 

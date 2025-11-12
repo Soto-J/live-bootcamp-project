@@ -3,13 +3,14 @@ use crate::helpers::{get_random_email, TestApp};
 use auth_service::{domain::error::ErrorResponse, utils::constants::JWT_COOKIE_NAME};
 use auth_service_macros::api_test;
 use reqwest::Url;
+use secrecy::{ExposeSecret, Secret};
 
 #[api_test]
 async fn should_return_200_if_valid_jwt_cookie() {
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
-        "email": random_email,
+        "email": random_email.expose_secret(),
         "password": "password123",
         "requires2FA": false
     });
@@ -19,7 +20,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     assert_eq!(response.status().as_u16(), 201);
 
     let login_body = serde_json::json!({
-        "email": random_email,
+        "email": random_email.expose_secret(),
         "password": "password123",
     });
 
@@ -34,7 +35,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
 
     assert!(!auth_cookie.value().is_empty());
 
-    let token = auth_cookie.value();
+    let token = Secret::new(auth_cookie.value().to_owned());
 
     let response = app.post_logout().await;
 
@@ -52,7 +53,7 @@ async fn should_return_200_if_valid_jwt_cookie() {
     let contains_token = banned_token_store
         .read()
         .await
-        .contains_token(token)
+        .contains_token(&token)
         .await
         .expect("Failed to check if token is banned");
 
@@ -90,7 +91,7 @@ async fn should_return_400_if_logout_called_twice_in_a_row() {
     let random_email = get_random_email();
 
     let signup_body = serde_json::json!({
-        "email": random_email,
+        "email": random_email.expose_secret(),
         "password": "password123",
         "requires2FA": false
     });
@@ -100,7 +101,7 @@ async fn should_return_400_if_logout_called_twice_in_a_row() {
     assert_eq!(response.status().as_u16(), 201);
 
     let login_body = serde_json::json!({
-        "email": random_email,
+        "email": random_email.expose_secret(),
         "password": "password123",
     });
 

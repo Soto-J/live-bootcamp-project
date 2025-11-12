@@ -3,9 +3,9 @@ use crate::{app_state::app_state::BannedTokenStoreType, domain::email::Email};
 
 use axum_extra::extract::cookie::{Cookie, SameSite};
 use chrono::Utc;
-use color_eyre::eyre::{self, Context, ContextCompat};
+use color_eyre::eyre::{self, Context};
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Validation};
-use secrecy::ExposeSecret;
+use secrecy::{ExposeSecret, Secret};
 use serde::{Deserialize, Serialize};
 
 // Create cookie with a new JWT auth token
@@ -54,7 +54,12 @@ pub async fn validate_token(
     token: &str,
     banned_token_store: BannedTokenStoreType,
 ) -> eyre::Result<Claims> {
-    match banned_token_store.read().await.contains_token(token).await {
+    match banned_token_store
+        .read()
+        .await
+        .contains_token(&Secret::new(token.to_owned()))
+        .await
+    {
         Ok(value) => {
             if value {
                 return Err(eyre::eyre!("Token is banned"));
@@ -65,7 +70,7 @@ pub async fn validate_token(
 
     decode::<Claims>(
         token,
-        &DecodingKey::from_secret(JWT_SECRET.as_bytes()),
+        &DecodingKey::from_secret(JWT_SECRET.expose_secret().as_bytes()),
         &Validation::default(),
     )
     .map(|data| data.claims)
@@ -77,7 +82,7 @@ fn create_token(claims: &Claims) -> eyre::Result<String> {
     encode(
         &jsonwebtoken::Header::default(),
         &claims,
-        &EncodingKey::from_secret(JWT_SECRET.as_bytes()),
+        &EncodingKey::from_secret(JWT_SECRET.expose_secret().as_bytes()),
     )
     .wrap_err("Failed to create token.")
 }
@@ -163,7 +168,7 @@ mod tests {
         let token = generate_auth_token(&email).unwrap();
         let mut hs = HashsetBannedTokenStore::default();
 
-        hs.add_token(token.clone()).await.unwrap();
+        hs.add_token(Secret::new(token.clone())).await.unwrap();
         let banned_token_store = Arc::new(RwLock::new(hs));
         let result = validate_token(&token, banned_token_store).await;
 

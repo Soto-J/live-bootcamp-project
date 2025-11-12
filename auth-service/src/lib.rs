@@ -13,6 +13,7 @@ use crate::{
 use axum::{routing::post, serve::Serve, Router};
 use redis::{Client, RedisResult};
 use reqwest::Method;
+use secrecy::{ExposeSecret, Secret};
 use sqlx::{mysql::MySqlPoolOptions, MySqlPool};
 use std::{error::Error, io};
 use tower_http::{cors::CorsLayer, services::ServeDir, trace::TraceLayer};
@@ -86,15 +87,15 @@ pub async fn configure_mysql() -> MySqlPool {
     mysql_pool
 }
 
-pub async fn get_mysql_pool(url: &str) -> Result<MySqlPool, sqlx::Error> {
+pub async fn get_mysql_pool(url: &Secret<String>) -> Result<MySqlPool, sqlx::Error> {
     MySqlPoolOptions::new()
         .max_connections(5)
-        .connect(url)
+        .connect(url.expose_secret())
         .await
 }
 
 pub fn configure_redis() -> redis::Connection {
-    get_redis_client(REDIS_HOST_NAME.to_owned())
+    get_redis_client(REDIS_HOST_NAME.expose_secret().to_owned())
         .expect("Failed to get Rediss client")
         .get_connection()
         .expect("Failed to get Redis connection")

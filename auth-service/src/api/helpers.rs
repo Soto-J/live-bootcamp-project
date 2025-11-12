@@ -103,8 +103,8 @@ impl TestApp {
     }
 }
 
-pub fn get_random_email() -> String {
-    SafeEmail().fake()
+pub fn get_random_email() -> Secret<String> {
+    Secret::new(SafeEmail().fake())
 }
 
 pub fn get_random_password() -> Secret<String> {
