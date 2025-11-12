@@ -1,8 +1,3 @@
-use ::serde::{Deserialize, Serialize};
-use axum::{extract::State, response::IntoResponse, Json};
-use axum_extra::extract::CookieJar;
-use reqwest::StatusCode;
-
 use crate::{
     app_state::app_state::AppState,
     domain::{
@@ -12,6 +7,12 @@ use crate::{
     },
     utils::auth::generate_auth_cookie,
 };
+
+use ::serde::{Deserialize, Serialize};
+use axum::{extract::State, response::IntoResponse, Json};
+use axum_extra::extract::CookieJar;
+use reqwest::StatusCode;
+use secrecy::Secret;
 
 #[derive(Debug, PartialEq, Serialize, Deserialize)]
 pub struct Verify2FARequest {
@@ -32,8 +33,8 @@ pub async fn verify_2fa_handler(
     Json(request): Json<Verify2FARequest>,
 ) -> (CookieJar, Result<impl IntoResponse, AuthAPIError>) {
     let (Ok(email), Ok(login_attempt_id_request), Ok(two_fa_code_request)) = (
-        Email::parse(request.email),
-        LoginAttemptId::parse(request.login_attempt_id),
+        Email::parse(Secret::new(request.email)),
+        LoginAttemptId::parse(Secret::new(request.login_attempt_id)),
         TwoFACode::parse(request.two_fa_code),
     ) else {
         return (cookie_jar, Err(AuthAPIError::InvalidCredentials));

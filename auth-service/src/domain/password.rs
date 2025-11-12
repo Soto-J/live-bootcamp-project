@@ -1,10 +1,12 @@
 use color_eyre::eyre;
-use serde::{Deserialize, Serialize};
+use secrecy::{ExposeSecret, Secret};
+use serde::Deserialize;
+use std::hash::Hash;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
-pub struct Password(pub String);
+#[derive(Debug, Deserialize, Clone)]
+pub struct Password(Secret<String>);
 impl Password {
-    pub fn parse(password: String) -> eyre::Result<Password> {
+    pub fn parse(password: Secret<String>) -> eyre::Result<Password> {
         if Self::invalid_password(&password) {
             return Err(eyre::eyre!("Failed to parse string to a Password type"));
         }
@@ -12,8 +14,8 @@ impl Password {
         Ok(Self(password))
     }
 
-    fn invalid_password(password: &str) -> bool {
-        if password.len() < 8 {
+    fn invalid_password(password: &Secret<String>) -> bool {
+        if password.expose_secret().len() < 8 {
             return true;
         }
 
@@ -21,46 +23,67 @@ impl Password {
     }
 }
 
-impl AsRef<str> for Password {
-    fn as_ref(&self) -> &str {
+impl AsRef<Secret<String>> for Password {
+    fn as_ref(&self) -> &Secret<String> {
         &self.0
     }
 }
 
-impl From<String> for Password {
-    fn from(value: String) -> Self {
+impl From<Secret<String>> for Password {
+    fn from(value: Secret<String>) -> Self {
         Self(value)
+    }
+}
+
+impl PartialEq for Password {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.expose_secret() == other.0.expose_secret()
+    }
+}
+
+impl Eq for Password {}
+
+impl Hash for Password {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.0.expose_secret().hash(state);
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::Password;
+    use super::*;
+    use crate::domain::Email;
+
+    use fake::faker::internet::en::SafeEmail;
+    use fake::Fake;
+    use secrecy::Secret;
 
     #[test]
     fn empty_string_is_rejected() {
-        let password = "".to_owned();
+        let password = Secret::new("".to_string());
+
         assert!(Password::parse(password).is_err());
     }
 
     #[test]
     fn string_less_than_8_characters_is_rejected() {
-        let password = "1234567".to_owned();
+        let password = Secret::new("1234567".to_string());
+
         assert!(Password::parse(password).is_err());
     }
 
-    // #[derive(Debug, Clone)]
-    // struct ValidPasswordFixture(pub String);
+    #[derive(Debug, Clone)]
+    struct ValidEmailFixture(pub String);
 
-    // impl quickcheck::Arbitrary for ValidPasswordFixture {
-    //     fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
-    //         let password = FakePassword(8..30).fake_with_rng(g);
-    //         Self(password)
-    //     }
-    // }
+    impl quickcheck::Arbitrary for ValidEmailFixture {
+        fn arbitrary<G: quickcheck::Gen>(g: &mut G) -> Self {
+            let email = SafeEmail().fake_with_rng(g);
+            Self(email)
+        }
+    }
 
-    // #[quickcheck_macros::quickcheck]
-    // fn valid_passwords_are_parsed_successfully(valid_password: ValidPasswordFixture) -> bool {
-    //     Password::parse(valid_password.0).is_ok()
-    // }
+    #[quickcheck_macros::quickcheck]
+    fn valid_emails_are_parsed_successfully(valid_email: ValidEmailFixture) -> bool {
+        Email::parse(Secret::new(valid_email.0)).is_ok()
+    }
 }

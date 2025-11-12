@@ -14,6 +14,7 @@ use fake::{
     Fake,
 };
 use reqwest::cookie::Jar;
+use secrecy::{ExposeSecret, Secret};
 use sqlx::MySqlPool;
 use std::{ops::Range, sync::Arc};
 use tokio::sync::RwLock;
@@ -167,9 +168,10 @@ pub async fn configure_mysql() -> (MySqlPool, String) {
     let mysql_conn_url = MYSQL_SERVER_URL.to_owned();
     let db_name = Uuid::new_v4().to_string();
 
-    configure_database(&mysql_conn_url, &db_name).await;
+    configure_database(&mysql_conn_url.expose_secret(), &db_name).await;
 
-    let mysql_conn_url_with_db = format!("{}/{}", mysql_conn_url, db_name);
+    let mysql_conn_url_with_db =
+        Secret::new(format!("{}/{}", mysql_conn_url.expose_secret(), db_name));
 
     let mysql_pool = get_mysql_pool(&mysql_conn_url_with_db)
         .await
@@ -179,7 +181,7 @@ pub async fn configure_mysql() -> (MySqlPool, String) {
 }
 
 pub async fn configure_database(db_conn_string: &str, db_name: &str) {
-    let mysql_pool = get_mysql_pool(&db_conn_string)
+    let mysql_pool = get_mysql_pool(&Secret::new(db_conn_string.to_owned()))
         .await
         .expect("Configure Database: Failed to create MySql connection pool.");
 
@@ -192,7 +194,7 @@ pub async fn configure_database(db_conn_string: &str, db_name: &str) {
     mysql_pool.close().await;
 
     // Connect to new database
-    let mysql_conn_url_with_db = format!("{}/{}", db_conn_string, db_name);
+    let mysql_conn_url_with_db = Secret::new(format!("{}/{}", db_conn_string, db_name));
 
     let mysql_pool = get_mysql_pool(&mysql_conn_url_with_db)
         .await
@@ -220,12 +222,12 @@ pub async fn drop_mysql_database(db_name: &str) {
     mysql_pool.close().await
 }
 
-pub fn get_random_email() -> String {
-    SafeEmail().fake()
+pub fn get_random_email() -> Secret<String> {
+    Secret::new(SafeEmail().fake())
 }
 
-pub fn get_random_password() -> String {
-    en::Password(Range { start: 8, end: 15 }).fake()
+pub fn get_random_password() -> Secret<String> {
+    Secret::new(en::Password(Range { start: 8, end: 15 }).fake())
 }
 
 pub fn get_invalid_password() -> String {

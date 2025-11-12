@@ -1,5 +1,6 @@
 use dotenvy::dotenv;
 use lazy_static::lazy_static;
+use secrecy::Secret;
 use std::env as std_env;
 
 pub const TOKEN_TTL_SECONDS: i64 = 600; // Token valid for 10 minutes
@@ -9,12 +10,12 @@ pub const JWT_COOKIE_NAME: &str = "jwt";
 pub const DEFAULT_REDIS_HOSTNAME: &str = "127.0.0.1";
 
 lazy_static! {
-    pub static ref JWT_SECRET: String = set_token();
-    pub static ref DATABASE_URL: String = set_database_url();
-    pub static ref MYSQL_SERVER_URL: String = set_mysql_server_url();
-    pub static ref MYSQL_PASSWORD: String = set_mysql_password();
-    pub static ref MYSQL_ROOT_PASSWORD: String = set_mysql_root_password();
-    pub static ref REDIS_HOST_NAME: String = set_redis_host();
+    pub static ref JWT_SECRET: Secret<String> = set_token();
+    pub static ref DATABASE_URL: Secret<String> = set_database_url();
+    pub static ref MYSQL_SERVER_URL: Secret<String> = set_mysql_server_url();
+    pub static ref MYSQL_PASSWORD: Secret<String> = set_mysql_password();
+    pub static ref MYSQL_ROOT_PASSWORD: Secret<String> = set_mysql_root_password();
+    pub static ref REDIS_HOST_NAME: Secret<String> = set_redis_host();
 }
 
 pub mod env {
@@ -34,7 +35,7 @@ pub mod test {
     pub const APP_ADDRESS: &str = "127.0.0.1:0";
 }
 
-fn set_token() -> String {
+fn set_token() -> Secret<String> {
     dotenv().ok();
 
     let secret = std_env::var(env::JWT_SECRET_ENV_VAR).expect("JWT_SECRET must be set.");
@@ -42,10 +43,10 @@ fn set_token() -> String {
         panic!("JWT_SECRET must not be empty.");
     }
 
-    secret
+    Secret::new(secret)
 }
 
-fn set_mysql_server_url() -> String {
+fn set_mysql_server_url() -> Secret<String> {
     dotenv().ok();
 
     let secret =
@@ -54,10 +55,10 @@ fn set_mysql_server_url() -> String {
         panic!("MYSQL_SERVER_URL must not be empty.");
     }
 
-    secret
+    Secret::new(secret)
 }
 
-fn set_database_url() -> String {
+fn set_database_url() -> Secret<String> {
     dotenv().ok();
 
     let secret = std_env::var(env::DATABASE_URL_ENV_VAR).expect("DATABASE_URL must be set.");
@@ -65,10 +66,10 @@ fn set_database_url() -> String {
         panic!("DATABASE_URL must not be empty.");
     }
 
-    secret
+    Secret::new(secret)
 }
 
-fn set_mysql_password() -> String {
+fn set_mysql_password() -> Secret<String> {
     dotenv().ok();
 
     let secret = std_env::var(env::MYSQL_PASSWORD_ENV_VAR).expect("MYSQL_PASSWORD must be set.");
@@ -76,10 +77,10 @@ fn set_mysql_password() -> String {
         panic!("MYSQL_PASSWORD must not be empty.");
     }
 
-    secret
+    Secret::new(secret)
 }
 
-fn set_mysql_root_password() -> String {
+fn set_mysql_root_password() -> Secret<String> {
     dotenv().ok();
 
     let secret =
@@ -88,10 +89,13 @@ fn set_mysql_root_password() -> String {
         panic!("MYSQL_ROOT_PASSWORD must not be empty.");
     }
 
-    secret
+    Secret::new(secret)
 }
 
-fn set_redis_host() -> String {
+fn set_redis_host() -> Secret<String> {
     dotenv().ok();
-    std_env::var(env::REDIS_HOST_NAME_ENV_VAR).unwrap_or(DEFAULT_REDIS_HOSTNAME.to_owned())
+    let secret =
+        std_env::var(env::REDIS_HOST_NAME_ENV_VAR).unwrap_or(DEFAULT_REDIS_HOSTNAME.to_owned());
+
+    Secret::new(secret)
 }

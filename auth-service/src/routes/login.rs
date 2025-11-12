@@ -11,13 +11,14 @@ use crate::{
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use axum_extra::extract::CookieJar;
+use secrecy::{ExposeSecret, Secret};
 use serde::{self, Deserialize, Serialize};
 use validator::Validate;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Validate)]
+#[derive(Debug, Clone, Deserialize, Validate)]
 pub struct LoginRequest {
     pub email: String,
-    pub password: String,
+    pub password: Secret<String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -74,8 +75,11 @@ pub async fn login_handler(
     handle_2fa(&valid_email, &state, updated_jar.clone()).await
 }
 
-fn parse_credentials(email: String, password: String) -> Result<(Email, Password), AuthAPIError> {
-    let email = Email::parse(email).map_err(|_| AuthAPIError::InvalidCredentials)?;
+fn parse_credentials(
+    email: String,
+    password: Secret<String>,
+) -> Result<(Email, Password), AuthAPIError> {
+    let email = Email::parse(Secret::new(email)).map_err(|_| AuthAPIError::InvalidCredentials)?;
     let password = Password::parse(password).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
     Ok((email, password))
@@ -107,14 +111,14 @@ async fn handle_2fa(
         .email_client
         .write()
         .await
-        .send_email(&email, "2FA Code", two_fa_code.as_ref())
+        .send_email(&email, "2FA Code", two_fa_code.as_ref().expose_secret())
         .await
     {
         return (jar, Err(AuthAPIError::UnexpectedError(e.into())));
     };
 
     let response = Json(LoginResponse::TwoFactorAuth(TwoFactorAuthResponse {
-        login_attempt_id: login_attempt_id.into(),
+        login_attempt_id: login_attempt_id.as_ref().expose_secret().to_owned(),
         message: "2FA required".into(),
     }));
 

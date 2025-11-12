@@ -4,30 +4,28 @@ use crate::{
 };
 
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
+use secrecy::Secret;
 use serde::{Deserialize, Serialize};
-use validator::Validate;
 
-#[derive(Serialize, Deserialize, Debug, Clone, Validate)]
+#[derive(Debug, Deserialize, Clone)]
 pub struct SignupRequest {
-    pub email: String,
-    pub password: String,
+    pub email: Secret<String>,
+    pub password: Secret<String>,
     #[serde(rename = "requires2FA")]
     pub requires_2fa: bool,
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct SignupResponse {
     pub message: String,
 }
 
-// skipping all arguments from being recorded in the trace
 #[tracing::instrument(name = "Signup", skip_all)]
 pub async fn signup_handler(
     State(state): State<AppState>,
     Json(request): Json<SignupRequest>,
 ) -> Result<impl IntoResponse, AuthAPIError> {
-    let email =
-        Email::parse(request.email.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
+    let email = Email::parse(request.email).map_err(|_| AuthAPIError::InvalidCredentials)?;
     let password =
         Password::parse(request.password.clone()).map_err(|_| AuthAPIError::InvalidCredentials)?;
 
@@ -39,7 +37,7 @@ pub async fn signup_handler(
         return Err(AuthAPIError::UserAlreadyExists);
     }
 
-    if let Err(e) = user_store.add_user(user).await  {
+    if let Err(e) = user_store.add_user(user).await {
         return Err(AuthAPIError::UnexpectedError(e.into()));
     }
 

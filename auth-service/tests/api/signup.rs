@@ -1,15 +1,13 @@
 use crate::helpers::{get_invalid_password, get_random_email, get_random_password, TestApp};
 
-use auth_service::{
-    domain::error::ErrorResponse,
-    routes::signup::{SignupRequest, SignupResponse},
-};
+use auth_service::{domain::error::ErrorResponse, routes::signup::SignupResponse};
 use auth_service_macros::api_test;
+use secrecy::ExposeSecret;
 
 #[api_test]
 pub async fn should_return_201_if_valid_input() {
     let test_case = serde_json::json!({
-        "email": get_random_email(),
+        "email": get_random_email().expose_secret(),
         "password": "password123",
         "requires2FA": true
     });
@@ -33,25 +31,25 @@ pub async fn should_return_201_if_valid_input() {
 #[api_test]
 pub async fn should_return_400_if_invalid_input() {
     let test_cases = [
-        serde_json::json!(SignupRequest {
-            email: "randomemail.com".into(),
-            password: get_random_password(),
-            requires_2fa: false
+        serde_json::json!( {
+            "email": "randomemail.com".to_owned(),
+            "password": get_random_password().expose_secret(),
+            "requires_2fa": false
         }),
-        serde_json::json!(SignupRequest {
-            email: "123@com".into(),
-            password: get_invalid_password(),
-            requires_2fa: false
+        serde_json::json!( {
+            "email": "123@com".to_owned(),
+            "password": get_invalid_password(),
+            "requires_2fa": false
         }),
-        serde_json::json!(SignupRequest {
-            email: "1.23!com".into(),
-            password: "".into(),
-            requires_2fa: false
+        serde_json::json!( {
+            "email": "1.23!com".to_owned(),
+            "password": "".to_owned(),
+            "requires_2fa": false
         }),
-        serde_json::json!(SignupRequest {
-            email: get_random_email(),
-            password: "".into(),
-            requires_2fa: false
+        serde_json::json!( {
+            "email": get_random_email().expose_secret(),
+            "password": "".to_owned(),
+            "requires_2fa": false
         }),
     ];
 
@@ -75,10 +73,10 @@ pub async fn should_return_409_if_email_already_exists() {
     let email = get_random_email();
     let password = get_random_password();
 
-    let credentials = serde_json::json!(SignupRequest {
-        email,
-        password,
-        requires_2fa: false
+    let credentials = serde_json::json!( {
+        "email": email.expose_secret(),
+        "password": password.expose_secret(),
+        "requires_2fa": false
     });
 
     app.post_signup(&credentials).await;

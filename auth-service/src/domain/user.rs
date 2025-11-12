@@ -1,8 +1,8 @@
-use serde::{Deserialize, Serialize};
-
 use crate::domain::{email::Email, password::Password};
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+use serde::Deserialize;
+
+#[derive(Debug, Clone, PartialEq, Deserialize)]
 pub struct User {
     pub email: Email,
     pub password: Password,
@@ -21,10 +21,6 @@ impl User {
 
     pub fn email(&self) -> &Email {
         &self.email
-    }
-
-    pub fn password(&self) -> &Password {
-        &self.password
     }
 
     pub fn has_2fa(&self) -> bool {
