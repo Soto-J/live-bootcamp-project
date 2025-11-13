@@ -73,12 +73,11 @@ impl Application {
 }
 
 pub async fn configure_mysql() -> MySqlPool {
-    // Create a new database connection pool
     let mysql_pool = get_mysql_pool(&DATABASE_URL)
         .await
         .expect("Failed to create MySql connection pool!");
 
-    // Run database migrations
+ 
     sqlx::migrate!()
         .run(&mysql_pool)
         .await

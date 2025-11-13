@@ -1,9 +1,11 @@
 use auth_service::{
     app_state::app_state::{AppState, BannedTokenStoreType, TwoFACodeStoreType},
-    configure_redis, get_mysql_pool,
+    configure_redis,
+    domain::Email,
+    get_mysql_pool,
     services::{
         data_stores::{MySqlUserStore, RedisBannedTokenStore, RedisTwoFACodeStore},
-        MockEmailClient,
+        MockEmailClient, PostmarkEmailClient,
     },
     utils::constants::{test, MYSQL_SERVER_URL},
     Application,
@@ -13,20 +15,21 @@ use fake::{
     faker::internet::en::{self, SafeEmail},
     Fake,
 };
-use reqwest::cookie::Jar;
+use reqwest::{cookie::Jar, Client};
 use secrecy::{ExposeSecret, Secret};
 use sqlx::MySqlPool;
 use std::{ops::Range, sync::Arc};
 use tokio::sync::RwLock;
 use uuid::Uuid;
+use wiremock::MockServer;
 
-#[derive(Clone)]
 pub struct TestApp {
     pub address: String,
     pub cookie_jar: Arc<Jar>,
     pub http_client: reqwest::Client,
     pub two_fa_code_store: TwoFACodeStoreType,
     pub banned_token_store: BannedTokenStoreType,
+    pub email_server: MockServer,
     pub db_name: String,
     pub cleaned_up_called: bool,
 }
@@ -42,13 +45,17 @@ impl TestApp {
             redis_connection.clone(),
         )));
         let two_fa_code_store = Arc::new(RwLock::new(RedisTwoFACodeStore::new(redis_connection)));
-        let email_client = Arc::new(RwLock::new(MockEmailClient));
+
+        let email_server = MockServer::start().await;
+        let base_url = email_server.uri();
+        
+        let email_client = Arc::new(RwLock::new(configure_postmark_email_client(base_url)));
 
         let app_state = AppState::new(
             user_store.clone(),
             banned_token_store.clone(),
             two_fa_code_store.clone(),
-            email_client.clone(),
+            email_client,
         );
 
         let app = Application::build(app_state, test::APP_ADDRESS)
@@ -74,6 +81,7 @@ impl TestApp {
             http_client,
             banned_token_store,
             two_fa_code_store,
+            email_server,
             db_name,
             cleaned_up_called: false,
         }
@@ -220,6 +228,19 @@ pub async fn drop_mysql_database(db_name: &str) {
         .expect("Failed to drop database");
 
     mysql_pool.close().await
+}
+
+fn configure_postmark_email_client(base_url: String) -> PostmarkEmailClient {
+    let postmark_auth_token = Secret::new("auth_token".to_owned());
+
+    let sender = Email::parse(Secret::new(test::email_client::SENDER.to_owned())).unwrap();
+
+    let http_client = Client::builder()
+        .timeout(test::email_client::TIMEOUT)
+        .build()
+        .expect("Failed to build HTTP client");
+
+    PostmarkEmailClient::new(base_url, sender, postmark_auth_token, http_client)
 }
 
 pub fn get_random_email() -> Secret<String> {
