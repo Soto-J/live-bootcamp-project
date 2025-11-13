@@ -7,6 +7,10 @@ use auth_service::{
 };
 use auth_service_macros::api_test;
 use secrecy::{ExposeSecret, Secret};
+use wiremock::{
+    matchers::{method, path},
+    Mock, ResponseTemplate,
+};
 
 #[api_test]
 async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
@@ -22,6 +26,13 @@ async fn should_return_200_if_valid_credentials_and_2fa_disabled() {
     let response = app.post_signup(&signup_body).await;
 
     assert_eq!(response.status().as_u16(), 201);
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     let login_body = serde_json::json!( {
         "email": email.expose_secret(),
@@ -51,7 +62,17 @@ async fn should_return_206_if_valid_credentials_and_2fa_enabled() {
         "requires_2fa": true,
     });
 
-    app.post_signup(&signup_credentials).await;
+    let response = app.post_signup(&signup_credentials).await;
+
+    assert_eq!(response.status().as_u16(), 201);
+
+    // Define an expectation for the mock server
+    Mock::given(path("/email")) // Expect an HTTP request to the "/email" path
+        .and(method("POST")) // Expect the HTTP method to be POST
+        .respond_with(ResponseTemplate::new(200)) // Respond with an HTTP 200 OK status
+        .expect(1) // Expect this request to be made exactly once
+        .mount(&app.email_server) // Mount this expectation on the mock email server
+        .await; // Await the asynchronous operation to ensure the mock server is set up before proceeding
 
     let login_credentials = serde_json::json!({
         "email": email.expose_secret(),
@@ -120,12 +141,22 @@ pub async fn should_return_401_if_incorrect_credentials() {
     let email = get_random_email();
     let password = get_random_password();
 
-    app.post_signup(&serde_json::json!({
-        "email": email.expose_secret(),
-        "password": password.expose_secret(),
-        "requires_2fa": false
-    }))
-    .await;
+    let response = app
+        .post_signup(&serde_json::json!({
+            "email": email.expose_secret(),
+            "password": password.expose_secret(),
+            "requires_2fa": false
+        }))
+        .await;
+
+    assert_eq!(response.status().as_u16(), 201);
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     let email = get_random_email();
     let password = get_random_password();

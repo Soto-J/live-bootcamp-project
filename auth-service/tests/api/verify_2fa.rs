@@ -11,6 +11,10 @@ use auth_service::{
 };
 use auth_service_macros::api_test;
 use secrecy::ExposeSecret;
+use wiremock::{
+    matchers::{method, path},
+    Mock, ResponseTemplate,
+};
 
 #[api_test]
 async fn should_return_200_if_correct_code() {
@@ -196,6 +200,13 @@ async fn should_return_401_if_old_code() {
         }
     );
 
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(2)
+        .mount(&app.email_server)
+        .await;
+
     let login_response = app
         .post_login(&serde_json::json!( {
             "email": email.clone().expose_secret(),
@@ -281,6 +292,13 @@ async fn should_return_401_if_same_code_twice() {
             message: "User created successfully!".into()
         }
     );
+
+    Mock::given(path("/email"))
+        .and(method("POST"))
+        .respond_with(ResponseTemplate::new(200))
+        .expect(1)
+        .mount(&app.email_server)
+        .await;
 
     let login_response = app
         .post_login(&serde_json::json!( {

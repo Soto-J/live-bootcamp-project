@@ -4,6 +4,7 @@ use color_eyre::eyre;
 use reqwest::{Client, Url};
 use secrecy::{ExposeSecret, Secret};
 
+#[derive(Debug)]
 pub struct PostmarkEmailClient {
     http_client: Client,
     base_url: String,
@@ -39,7 +40,7 @@ impl EmailClient for PostmarkEmailClient {
     ) -> eyre::Result<String> {
         // Parse the base URL and join it with the email endpoint
         let base = Url::parse(&self.base_url)?;
-        let url = base.join("/email")?;
+        let url = base.join("email")?;
 
         // Create the request body for sending the email
         let request_body = SendEmailRequest {
@@ -62,7 +63,21 @@ impl EmailClient for PostmarkEmailClient {
             .json(&request_body);
 
         // Send the request and get the response
-        let response = request.send().await?.error_for_status()?;
+        let response = request.send().await?;
+
+        // Check the status code and handle errors with detailed error messages
+        if !response.status().is_success() {
+            let status = response.status();
+            let error_body = response
+                .text()
+                .await
+                .unwrap_or_else(|_| "Unable to read error response".to_string());
+            return Err(eyre::eyre!(
+                "Postmark API request failed with status {}: {}",
+                status,
+                error_body
+            ));
+        }
 
         // Parse the response to extract the MessageID
         let response_body: serde_json::Value = response.json().await?;
@@ -95,28 +110,29 @@ struct SendEmailRequest<'a> {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
     use crate::utils::constants::test;
 
-    use super::*;
-    use fake::faker::internet::en::SafeEmail;
-    use fake::faker::lorem::en::{Paragraph, Sentence};
-    use fake::{Fake, Faker};
-    use wiremock::matchers::{any, header, header_exists, method, path};
-    use wiremock::{Mock, MockServer, Request, ResponseTemplate};
+    use fake::{
+        faker::{
+            internet::en::SafeEmail,
+            lorem::en::{Paragraph, Sentence},
+        },
+        Fake, Faker,
+    };
+    use wiremock::{
+        matchers::{any, header, header_exists, method, path},
+        Mock, MockServer, Request, ResponseTemplate,
+    };
 
-    use super::PostmarkEmailClient;
-
-    // Helper function to generate a test subject
     fn subject() -> String {
         Sentence(1..2).fake()
     }
 
-    // Helper function to generate test content
     fn content() -> String {
         Paragraph(1..10).fake()
     }
 
-    // Helper function to generate a test email
     fn email() -> Email {
         Email::parse(Secret::new(SafeEmail().fake())).unwrap()
     }
@@ -161,7 +177,10 @@ mod tests {
             .and(path("/email"))
             .and(method("POST"))
             .and(SendEmailBodyMatcher)
-            .respond_with(ResponseTemplate::new(200))
+            .respond_with(
+                ResponseTemplate::new(200)
+                    .set_body_json(serde_json::json!({"MessageID": "test-message-id"})),
+            )
             .expect(1)
             .mount(&mock_server)
             .await;
